@@ -126,7 +126,7 @@ class ImageViewer {
         this.scene = null;
         this.camera = null;
         this.renderer = null;
-        this.nearestCount = 10;
+        this.nearestCount = 50;
         this.controller = null;
         this.points = [];
         this.imageSprites = [];
