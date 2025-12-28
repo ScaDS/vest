@@ -149,6 +149,122 @@
             background: #0f0f0f;
             border-radius: 4px;
         }
+
+        /* Keyframes Panel Styles */
+        #keyframes-panel {
+            max-height: 400px;
+        }
+
+        #keyframes-panel .side-title {
+            margin-bottom: 8px;
+        }
+
+        #keyframes-list {
+            margin-bottom: 10px;
+            min-height: 40px;
+            max-height: 200px;
+            overflow-y: auto;
+            background: #0f0f0f;
+            border-radius: 4px;
+            padding: 5px;
+        }
+
+        .keyframe-item {
+            background: rgba(74, 158, 255, 0.1);
+            border: 1px solid rgba(74, 158, 255, 0.3);
+            border-radius: 4px;
+            padding: 6px 8px;
+            margin-bottom: 4px;
+            font-size: 11px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .keyframe-item:hover {
+            background: rgba(74, 158, 255, 0.2);
+        }
+
+        .keyframe-item-info {
+            flex: 1;
+            font-family: 'Courier New', monospace;
+            color: #4a9eff;
+        }
+
+        .keyframe-item-delete {
+            background: rgba(255, 80, 80, 0.3);
+            border: 1px solid rgba(255, 80, 80, 0.5);
+            color: #ff5050;
+            padding: 2px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+            transition: background 0.2s;
+        }
+
+        .keyframe-item-delete:hover {
+            background: rgba(255, 80, 80, 0.5);
+        }
+
+        .keyframe-controls {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .keyframe-btn {
+            flex: 1;
+            background: rgba(74, 158, 255, 0.2);
+            border: 1px solid rgba(74, 158, 255, 0.5);
+            color: #4a9eff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .keyframe-btn:hover {
+            background: rgba(74, 158, 255, 0.3);
+            border-color: #4a9eff;
+        }
+
+        .keyframe-btn:active {
+            background: rgba(74, 158, 255, 0.4);
+        }
+
+        .keyframe-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .keyframe-speed-control {
+            margin-top: 10px;
+        }
+
+        .keyframe-speed-control label {
+            font-size: 11px;
+            color: #aaa;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        #keyframe-speed-slider {
+            width: 100%;
+            margin-top: 2px;
+        }
+
+        #keyframes-list:empty::before {
+            content: "No keyframes yet";
+            display: block;
+            text-align: center;
+            color: #555;
+            font-size: 11px;
+            padding: 15px 0;
+        }
     </style>
 </head>
 <body>
@@ -210,6 +326,19 @@
         <div class="side-view">
             <div class="side-title">Y–Z</div>
             <canvas id="view-yz" width="224" height="140"></canvas>
+        </div>
+        <!-- Keyframes Panel -->
+        <div class="side-view" id="keyframes-panel">
+            <div class="side-title">Camera Keyframes</div>
+            <div id="keyframes-list"></div>
+            <div class="keyframe-controls">
+                <button id="add-keyframe-btn" class="keyframe-btn">Add Keyframe</button>
+                <button id="play-keyframes-btn" class="keyframe-btn">Play</button>
+            </div>
+            <div class="keyframe-speed-control">
+                <label for="keyframe-speed-slider">Speed: <span id="keyframe-speed-value">1.0</span>x</label>
+                <input type="range" id="keyframe-speed-slider" min="0.1" max="3" step="0.1" value="1.0">
+            </div>
         </div>
     </div>
 

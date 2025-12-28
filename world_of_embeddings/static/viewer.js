@@ -168,6 +168,13 @@ class ImageViewer {
             yz: { canvas: null, ctx: null, off: null, offCtx: null, axes: ['y','z'], scale: 1, centerA: 0, centerB: 0, margin: 8 }
         };
 
+        // Keyframe animation
+        this.keyframes = [];
+        this.isPlayingKeyframes = false;
+        this.keyframeSpeed = 1.0;
+        this.keyframeProgress = 0;
+        this.keyframeStartTime = 0;
+
         this.init();
         this.loadData();
         this.animate();
@@ -222,6 +229,9 @@ class ImageViewer {
 
         // Setup side-views
         this.initSideViews();
+
+        // Setup keyframe controls
+        this.initKeyframeControls();
     }
 
     async loadData() {
@@ -680,10 +690,13 @@ class ImageViewer {
             const ys = this.points.map(p => p.y);
             const zs = this.points.map(p => p.z);
 
-            const boundsText = `X: [${Math.min(...xs).toFixed(1)}, ${Math.max(...xs).toFixed(1)}]<br>
-                               Y: [${Math.min(...ys).toFixed(1)}, ${Math.max(...ys).toFixed(1)}]<br>
-                               Z: [${Math.min(...zs).toFixed(1)}, ${Math.max(...zs).toFixed(1)}]`;
-            document.getElementById('bounds').innerHTML = boundsText;
+            const boundsElement = document.getElementById('bounds');
+            if (boundsElement) {
+                const boundsText = `X: [${Math.min(...xs).toFixed(1)}, ${Math.max(...xs).toFixed(1)}]<br>
+                                   Y: [${Math.min(...ys).toFixed(1)}, ${Math.max(...ys).toFixed(1)}]<br>
+                                   Z: [${Math.min(...zs).toFixed(1)}, ${Math.max(...zs).toFixed(1)}]`;
+                boundsElement.innerHTML = boundsText;
+            }
         }
     }
 
@@ -937,6 +950,150 @@ class ImageViewer {
         }
     }
 
+    // ===== Keyframe Methods =====
+    
+    initKeyframeControls() {
+        const addBtn = document.getElementById('add-keyframe-btn');
+        const playBtn = document.getElementById('play-keyframes-btn');
+        const speedSlider = document.getElementById('keyframe-speed-slider');
+        const speedValue = document.getElementById('keyframe-speed-value');
+
+        addBtn.addEventListener('click', () => this.addKeyframe());
+        playBtn.addEventListener('click', () => this.togglePlayKeyframes());
+        
+        speedSlider.addEventListener('input', (e) => {
+            this.keyframeSpeed = parseFloat(e.target.value);
+            speedValue.textContent = this.keyframeSpeed.toFixed(1);
+        });
+    }
+
+    addKeyframe() {
+        // Capture current camera state
+        const keyframe = {
+            position: this.camera.position.clone(),
+            quaternion: this.camera.quaternion.clone(),
+            timestamp: Date.now()
+        };
+        
+        this.keyframes.push(keyframe);
+        this.updateKeyframesList();
+    }
+
+    updateKeyframesList() {
+        const list = document.getElementById('keyframes-list');
+        list.innerHTML = '';
+        
+        this.keyframes.forEach((keyframe, index) => {
+            const item = document.createElement('div');
+            item.className = 'keyframe-item';
+            
+            const info = document.createElement('div');
+            info.className = 'keyframe-item-info';
+            const pos = keyframe.position;
+            info.textContent = `${index + 1}. (${pos.x.toFixed(0)}, ${pos.y.toFixed(0)}, ${pos.z.toFixed(0)})`;
+            
+            const deleteBtn = document.createElement('div');
+            deleteBtn.className = 'keyframe-item-delete';
+            deleteBtn.textContent = 'Del';
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.deleteKeyframe(index);
+            });
+            
+            // Click to jump to keyframe
+            item.addEventListener('click', () => {
+                this.jumpToKeyframe(index);
+            });
+            
+            item.appendChild(info);
+            item.appendChild(deleteBtn);
+            list.appendChild(item);
+        });
+    }
+
+    deleteKeyframe(index) {
+        this.keyframes.splice(index, 1);
+        this.updateKeyframesList();
+    }
+
+    jumpToKeyframe(index) {
+        if (index >= 0 && index < this.keyframes.length) {
+            const keyframe = this.keyframes[index];
+            this.camera.position.copy(keyframe.position);
+            this.camera.quaternion.copy(keyframe.quaternion);
+        }
+    }
+
+    togglePlayKeyframes() {
+        const playBtn = document.getElementById('play-keyframes-btn');
+        
+        if (this.isPlayingKeyframes) {
+            this.stopPlayingKeyframes();
+            playBtn.textContent = 'Play';
+        } else {
+            if (this.keyframes.length < 2) {
+                alert('Please add at least 2 keyframes to play animation');
+                return;
+            }
+            this.startPlayingKeyframes();
+            playBtn.textContent = 'Stop';
+        }
+    }
+
+    startPlayingKeyframes() {
+        this.isPlayingKeyframes = true;
+        this.keyframeProgress = 0;
+        this.keyframeStartTime = performance.now();
+    }
+
+    stopPlayingKeyframes() {
+        this.isPlayingKeyframes = false;
+        this.keyframeProgress = 0;
+    }
+
+    updateKeyframeAnimation(deltaTime) {
+        if (!this.isPlayingKeyframes || this.keyframes.length < 2) {
+            return;
+        }
+
+        // Calculate total animation duration (2 seconds per segment by default)
+        const segmentDuration = 2000 / this.keyframeSpeed; // milliseconds
+        const totalDuration = segmentDuration * (this.keyframes.length - 1);
+        
+        // Update progress
+        const elapsed = performance.now() - this.keyframeStartTime;
+        this.keyframeProgress = (elapsed % totalDuration) / totalDuration;
+        
+        // Find which segment we're in
+        const segmentProgress = this.keyframeProgress * (this.keyframes.length - 1);
+        const segmentIndex = Math.floor(segmentProgress);
+        const localProgress = segmentProgress - segmentIndex;
+        
+        // Get start and end keyframes for current segment
+        const startKeyframe = this.keyframes[segmentIndex];
+        const endKeyframe = this.keyframes[segmentIndex + 1] || this.keyframes[0];
+        
+        // Interpolate position
+        this.camera.position.lerpVectors(
+            startKeyframe.position,
+            endKeyframe.position,
+            this.smoothstep(localProgress)
+        );
+        
+        // Interpolate rotation (quaternion)
+        THREE.Quaternion.slerp(
+            startKeyframe.quaternion,
+            endKeyframe.quaternion,
+            this.camera.quaternion,
+            this.smoothstep(localProgress)
+        );
+    }
+
+    // Smooth interpolation function (ease in-out)
+    smoothstep(t) {
+        return t * t * (3 - 2 * t);
+    }
+
     animate() {
         requestAnimationFrame(() => this.animate());
 
@@ -945,8 +1102,13 @@ class ImageViewer {
         const deltaTime = Math.min((currentTime - this.lastTime) / 16.67, 2); // Normalize to 60fps, cap at 2x
         this.lastTime = currentTime;
 
-        // Update camera controller
-        this.controller.update(deltaTime);
+        // Update keyframe animation (if playing)
+        if (this.isPlayingKeyframes) {
+            this.updateKeyframeAnimation(deltaTime);
+        } else {
+            // Update camera controller only when not playing keyframes
+            this.controller.update(deltaTime);
+        }
 
         // Update UI
         const pos = this.camera.position;
