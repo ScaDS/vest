@@ -136,4 +136,6 @@ test_data/
 examples/rdm-slides/
 
 examples/imagenet/
+examples/animals/
+examples/lexica_dataset/
 
