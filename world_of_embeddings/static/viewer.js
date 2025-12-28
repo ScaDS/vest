@@ -55,11 +55,18 @@ class CameraController {
             }
         });
 
-        // Click on the canvas element to request pointer lock
+        // Click on the canvas element to toggle pointer lock
         this.element.addEventListener('click', () => {
-            this.element.requestPointerLock =
-                this.element.requestPointerLock || this.element.mozRequestPointerLock;
-            this.element.requestPointerLock();
+            if (this.mouse.locked) {
+                // Exit pointer lock if currently locked
+                document.exitPointerLock = document.exitPointerLock || document.mozExitPointerLock;
+                document.exitPointerLock();
+            } else {
+                // Request pointer lock if not currently locked
+                this.element.requestPointerLock =
+                    this.element.requestPointerLock || this.element.mozRequestPointerLock;
+                this.element.requestPointerLock();
+            }
         });
 
         document.addEventListener('pointerlockchange', () => {
