@@ -148,6 +148,41 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Right-side mini views */
+        #side-views {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 110;
+        }
+
+        .side-view {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 8px;
+            width: 240px;
+        }
+
+        .side-title {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .side-view canvas {
+            display: block;
+            width: 224px; /* 240 - padding*2 */
+            height: 140px;
+            background: #0f0f0f;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -173,6 +208,22 @@
         <div class="info-group">
             <div class="info-label">Near Point</div>
             <div class="info-value" id="near-point">-</div>
+        </div>
+    </div>
+
+    <!-- Right side orientation mini-views -->
+    <div id="side-views">
+        <div class="side-view">
+            <div class="side-title">X–Y</div>
+            <canvas id="view-xy" width="224" height="140"></canvas>
+        </div>
+        <div class="side-view">
+            <div class="side-title">X–Z</div>
+            <canvas id="view-xz" width="224" height="140"></canvas>
+        </div>
+        <div class="side-view">
+            <div class="side-title">Y–Z</div>
+            <canvas id="view-yz" width="224" height="140"></canvas>
         </div>
     </div>
 

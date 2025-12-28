@@ -98,6 +98,14 @@ class ImageViewer {
         this.imageBasePath = '';
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
+        this.bounds = null;
+
+        // Mini side-views (XY, XZ, YZ)
+        this.sideViews = {
+            xy: { canvas: null, ctx: null, off: null, offCtx: null, axes: ['x','y'], scale: 1, centerA: 0, centerB: 0, margin: 8 },
+            xz: { canvas: null, ctx: null, off: null, offCtx: null, axes: ['x','z'], scale: 1, centerA: 0, centerB: 0, margin: 8 },
+            yz: { canvas: null, ctx: null, off: null, offCtx: null, axes: ['y','z'], scale: 1, centerA: 0, centerB: 0, margin: 8 }
+        };
 
         this.init();
         this.loadData();
@@ -155,6 +163,9 @@ class ImageViewer {
                 this.closeImagePopup();
             }
         });
+
+        // Setup side-views
+        this.initSideViews();
     }
 
     async loadData() {
@@ -171,6 +182,10 @@ class ImageViewer {
 
             this.createScene(stats);
             this.updateUI();
+            // Prepare mini-view bounds and static layers
+            this.bounds = stats.bounds || null;
+            this.computeSideViewScales();
+            this.drawSideViewsStatic();
             this.hideLoading();
         } catch (error) {
             console.error('Error loading data:', error);
@@ -232,11 +247,175 @@ class ImageViewer {
         }
     }
 
+    initSideViews() {
+        // Grab canvases and create offscreen buffers
+        const xy = this.sideViews.xy;
+        const xz = this.sideViews.xz;
+        const yz = this.sideViews.yz;
+
+        xy.canvas = document.getElementById('view-xy');
+        xz.canvas = document.getElementById('view-xz');
+        yz.canvas = document.getElementById('view-yz');
+
+        if (xy.canvas) xy.ctx = xy.canvas.getContext('2d');
+        if (xz.canvas) xz.ctx = xz.canvas.getContext('2d');
+        if (yz.canvas) yz.ctx = yz.canvas.getContext('2d');
+
+        [xy, xz, yz].forEach(v => {
+            if (!v || !v.canvas) return;
+            v.off = document.createElement('canvas');
+            v.off.width = v.canvas.width;
+            v.off.height = v.canvas.height;
+            v.offCtx = v.off.getContext('2d');
+        });
+    }
+
+    computeSideViewScales() {
+        if (!this.bounds) return;
+        const setScale = (v) => {
+            const [a, b] = v.axes; // axis names
+            const w = v.canvas ? v.canvas.width : 0;
+            const h = v.canvas ? v.canvas.height : 0;
+            if (!w || !h) return;
+            const margin = v.margin || 8;
+            const aMin = this.bounds[a][0];
+            const aMax = this.bounds[a][1];
+            const bMin = this.bounds[b][0];
+            const bMax = this.bounds[b][1];
+            const aRange = Math.max(1e-6, aMax - aMin);
+            const bRange = Math.max(1e-6, bMax - bMin);
+            const scaleA = (w - 2 * margin) / aRange;
+            const scaleB = (h - 2 * margin) / bRange;
+            v.scale = Math.min(scaleA, scaleB);
+            v.centerA = (aMin + aMax) / 2;
+            v.centerB = (bMin + bMax) / 2;
+        };
+        setScale(this.sideViews.xy);
+        setScale(this.sideViews.xz);
+        setScale(this.sideViews.yz);
+    }
+
+    worldToCanvas(v, aVal, bVal) {
+        // Center-based uniform scaling, y-axis up
+        const w = v.canvas.width;
+        const h = v.canvas.height;
+        const x = w / 2 + (aVal - v.centerA) * v.scale;
+        const y = h / 2 - (bVal - v.centerB) * v.scale;
+        return { x, y };
+    }
+
+    drawSideViewsStatic() {
+        // Draw static background and all points with same size
+        const views = [this.sideViews.xy, this.sideViews.xz, this.sideViews.yz];
+        views.forEach((v) => {
+            if (!v.canvas || !v.offCtx) return;
+            const ctx = v.offCtx;
+            const w = v.off.width;
+            const h = v.off.height;
+            ctx.clearRect(0, 0, w, h);
+
+            // Background grid (subtle)
+            ctx.fillStyle = '#0f0f0f';
+            ctx.fillRect(0, 0, w, h);
+            ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, h / 2);
+            ctx.lineTo(w, h / 2);
+            ctx.moveTo(w / 2, 0);
+            ctx.lineTo(w / 2, h);
+            ctx.stroke();
+
+            // Points
+            const [a, b] = v.axes;
+            const radius = 2; // fixed size
+            ctx.fillStyle = '#ffffff';
+            this.points.forEach(p => {
+                const px = this.worldToCanvas(v, p[a], p[b]);
+                ctx.beginPath();
+                ctx.arc(px.x, px.y, radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        });
+    }
+
+    drawArrow(ctx, startPx, endPx) {
+        // Draw line
+        ctx.strokeStyle = '#4a9eff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(startPx.x, startPx.y);
+        ctx.lineTo(endPx.x, endPx.y);
+        ctx.stroke();
+
+        // Arrow head
+        const dx = endPx.x - startPx.x;
+        const dy = endPx.y - startPx.y;
+        const angle = Math.atan2(dy, dx);
+        const headLen = 8;
+        ctx.beginPath();
+        ctx.moveTo(endPx.x, endPx.y);
+        ctx.lineTo(endPx.x - headLen * Math.cos(angle - Math.PI / 6), endPx.y - headLen * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(endPx.x - headLen * Math.cos(angle + Math.PI / 6), endPx.y - headLen * Math.sin(angle + Math.PI / 6));
+        ctx.lineTo(endPx.x, endPx.y);
+        ctx.fillStyle = '#4a9eff';
+        ctx.fill();
+    }
+
+    drawSideViewsDynamic() {
+        // Overlay the camera position and arrow
+        if (!this.bounds) return;
+        const views = [this.sideViews.xy, this.sideViews.xz, this.sideViews.yz];
+        const camPos = this.camera.position;
+        const camDir = new THREE.Vector3();
+        this.camera.getWorldDirection(camDir);
+
+        views.forEach((v) => {
+            if (!v.canvas || !v.ctx) return;
+            const ctx = v.ctx;
+            const w = v.canvas.width;
+            const h = v.canvas.height;
+
+            // Draw static layer first
+            if (v.off) ctx.drawImage(v.off, 0, 0);
+
+            // Camera position dot
+            let aName = v.axes[0];
+            let bName = v.axes[1];
+            const posPx = this.worldToCanvas(v, camPos[aName], camPos[bName]);
+            ctx.fillStyle = '#ff5e5e';
+            ctx.beginPath();
+            ctx.arc(posPx.x, posPx.y, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Camera direction arrow in plane
+            const dirA = camDir[aName];
+            const dirB = camDir[bName];
+            let len2 = Math.hypot(dirA, dirB);
+            let dir2A = dirA, dir2B = dirB;
+            if (len2 < 1e-6) {
+                // Fallback up arrow
+                dir2A = 0; dir2B = 1; len2 = 1;
+            }
+            dir2A /= len2; dir2B /= len2;
+
+            // Arrow length ~ 20% of larger range in world units, then mapped
+            const rangeA = this.bounds[aName][1] - this.bounds[aName][0];
+            const rangeB = this.bounds[bName][1] - this.bounds[bName][0];
+            const Lw = 0.2 * Math.max(rangeA, rangeB);
+            const endWorldA = camPos[aName] + dir2A * Lw;
+            const endWorldB = camPos[bName] + dir2B * Lw;
+            const endPx = this.worldToCanvas(v, endWorldA, endWorldB);
+
+            this.drawArrow(ctx, posPx, endPx);
+        });
+    }
+
     onMouseClick(event) {
         // Don't racast if over UI
-        if (event.target.id === 'ui-panel' || event.target.id === 'controls' ||
-            event.target.parentElement.id === 'ui-panel' ||
-            event.target.parentElement.id === 'controls') {
+        if (event.target.id === 'ui-panel' || event.target.id === 'controls' || event.target.id === 'side-views' ||
+            (event.target.parentElement && (event.target.parentElement.id === 'ui-panel' ||
+            event.target.parentElement.id === 'controls' || event.target.parentElement.id === 'side-views'))) {
             return;
         }
 
@@ -292,6 +471,12 @@ class ImageViewer {
         this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(width, height);
+
+        // If side-views exist, recompute scales and redraw static layer
+        if (this.sideViews.xy.canvas) {
+            this.computeSideViewScales();
+            this.drawSideViewsStatic();
+        }
     }
 
     updateNearestPoint() {
@@ -442,6 +627,9 @@ class ImageViewer {
             `${pos.x.toFixed(0)}, ${pos.y.toFixed(0)}, ${pos.z.toFixed(0)}`;
 
         this.updateNearestPoint();
+
+        // Update side-views dynamic overlay (camera arrow)
+        this.drawSideViewsDynamic();
 
         // Render scene
         this.renderer.render(this.scene, this.camera);
