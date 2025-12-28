@@ -79,8 +79,8 @@ class CameraController {
         // Adjust forward speed with I/J (allow backward motion)
         const accelerating = this.keys['i'];
         const braking = this.keys['k'];
-        if (accelerating) this.forwardSpeed = Math.min(this.maxSpeed, this.forwardSpeed + this.accelStep * deltaTime);
-        if (braking) this.forwardSpeed = Math.max(-this.maxSpeed, this.forwardSpeed - this.accelStep * deltaTime);
+        if (accelerating) this.forwardSpeed = Math.min(this.maxSpeed, this.forwardSpeed + 0.05);
+        if (braking) this.forwardSpeed = Math.max(-this.maxSpeed, this.forwardSpeed - 0.05);
 
         // No drag - speed remains constant unless user actively changes it
 
