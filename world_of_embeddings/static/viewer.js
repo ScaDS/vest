@@ -141,6 +141,7 @@ class ImageViewer {
         this.mouse = new THREE.Vector2();
         this.bounds = null;
         this.imageSize = 0.5; // Default image size
+        this.renderImages = true; // Render images flag
         this.lastTime = performance.now();
 
         // Mini side-views (XY, XZ, YZ)
@@ -202,6 +203,9 @@ class ImageViewer {
         // Setup nearest count slider
         this.initNearestCountSlider();
 
+        // Setup render images checkbox
+        this.initRenderImagesCheckbox();
+
         // Setup side-views
         this.initSideViews();
     }
@@ -250,19 +254,20 @@ class ImageViewer {
             const y = point.y;
             const z = point.z;
 
-            // Create a simple placeholder geometry (will be replaced based on distance)
-            const geometry = new THREE.CircleGeometry(0.5, 8);
-            const material = new THREE.MeshBasicMaterial({
+            // Create a sprite for point-like visualization
+            const material = new THREE.SpriteMaterial({
                 color: 0xffffff,
                 transparent: true,
-                opacity: 0.8
+                opacity: 0.8,
+                sizeAttenuation: true
             });
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.set(x, y, z);
-            mesh.userData = { filename, index, imageUrl: `/api/image/${filename}`, textureLoader };
+            const sprite = new THREE.Sprite(material);
+            sprite.position.set(x, y, z);
+            sprite.scale.set(0.5, 0.5, 1);
+            sprite.userData = { filename, index, imageUrl: `/api/image/${filename}`, textureLoader, isSprite: true };
 
-            this.scene.add(mesh);
-            this.imageSprites.push(mesh);
+            this.scene.add(sprite);
+            this.imageSprites.push(sprite);
         });
 
         // Adjust camera to see all points
@@ -334,6 +339,22 @@ class ImageViewer {
         
         // Listen for changes
         slider.addEventListener('input', updateNearestCount);
+    }
+
+    initRenderImagesCheckbox() {
+        const checkbox = document.getElementById('render-images-checkbox');
+        
+        if (!checkbox) return;
+        
+        const updateRenderImages = () => {
+            this.renderImages = checkbox.checked;
+        };
+        
+        // Initialize state
+        updateRenderImages();
+        
+        // Listen for changes
+        checkbox.addEventListener('change', updateRenderImages);
     }
 
     initSideViews() {
@@ -727,18 +748,18 @@ class ImageViewer {
         distances.forEach((item, idx) => {
             const { sprite, distance, inFront } = item;
             
-            // Only show images for sprites that are in front of the camera
+            // Only show images for sprites that are in front of the camera and if renderImages is enabled
             const isClosest = inFront && closest.some(c => c.sprite === sprite);
 
-            if (isClosest) {
+            if (isClosest && this.renderImages) {
                 // Load as image if not already loaded
                 if (!sprite.userData.isImage) {
                     this.loadSpriteAsImage(sprite);
                 }
             } else {
-                // Convert to dot if it's currently an image
+                // Convert to rectangle if it's currently an image
                 if (sprite.userData.isImage) {
-                    this.convertSpriteToCircle(sprite);
+                    this.convertSpriteToRectangle(sprite);
                 }
                 
                 // Update dot appearance based on distance
@@ -764,10 +785,12 @@ class ImageViewer {
                 // Opacity: more opaque when closer
                 const opacity = 1.0 - (normalizedDist * 0.4);
                 
-                // Update geometry size
-                if (sprite.geometry.type === 'CircleGeometry') {
+                // Update sprite size and appearance
+                if (sprite.userData.isSprite) {
+                    sprite.scale.set(finalSize, finalSize, 1);
+                } else if (sprite.geometry && sprite.geometry.type === 'PlaneGeometry') {
                     sprite.geometry.dispose();
-                    sprite.geometry = new THREE.CircleGeometry(finalSize, 8);
+                    sprite.geometry = new THREE.PlaneGeometry(finalSize, finalSize);
                 }
                 
                 // Update material
@@ -775,8 +798,10 @@ class ImageViewer {
                 sprite.material.opacity = opacity;
             }
             
-            // Always face camera
-            sprite.lookAt(this.camera.position);
+            // Face camera (sprites automatically billboard, meshes need manual update)
+            if (sprite.type === 'Mesh') {
+                sprite.lookAt(this.camera.position);
+            }
         });
 
         // Update UI with nearest point
@@ -793,6 +818,7 @@ class ImageViewer {
         const imageUrl = sprite.userData.imageUrl;
         
         sprite.userData.isImage = true;
+        sprite.userData.isSprite = false;
         
         textureLoader.load(
             imageUrl,
@@ -826,13 +852,33 @@ class ImageViewer {
                     side: THREE.DoubleSide
                 });
                 
-                // Dispose of old material and geometry
-                sprite.material.dispose();
-                sprite.geometry.dispose();
-                
-                sprite.geometry = newGeometry;
-                sprite.material = imageMaterial;
-                sprite.userData.texture = finalTexture;
+                // If it's a sprite, convert to mesh
+                if (sprite.type === 'Sprite') {
+                    // Remove old sprite from scene
+                    this.scene.remove(sprite);
+                    sprite.material.dispose();
+                    
+                    // Create new mesh
+                    const mesh = new THREE.Mesh(newGeometry, imageMaterial);
+                    mesh.position.copy(sprite.position);
+                    mesh.userData = sprite.userData;
+                    mesh.userData.texture = finalTexture;
+                    
+                    // Replace in array
+                    const index = this.imageSprites.indexOf(sprite);
+                    if (index !== -1) {
+                        this.imageSprites[index] = mesh;
+                    }
+                    this.scene.add(mesh);
+                } else {
+                    // Dispose of old material and geometry
+                    sprite.material.dispose();
+                    if (sprite.geometry) sprite.geometry.dispose();
+                    
+                    sprite.geometry = newGeometry;
+                    sprite.material = imageMaterial;
+                    sprite.userData.texture = finalTexture;
+                }
             },
             undefined,
             (error) => {
@@ -879,26 +925,52 @@ class ImageViewer {
         return downsampledTexture;
     }
 
-    convertSpriteToCircle(sprite) {
+    convertSpriteToRectangle(sprite) {
         // Dispose of texture if it exists
         if (sprite.userData.texture) {
             sprite.userData.texture.dispose();
             delete sprite.userData.texture;
         }
         
-        // Dispose old geometry and material
-        sprite.material.dispose();
-        sprite.geometry.dispose();
-        
-        // Create circle geometry and basic material
-        sprite.geometry = new THREE.CircleGeometry(0.5, 8);
-        sprite.material = new THREE.MeshBasicMaterial({
-            color: 0xffffff,
-            transparent: true,
-            opacity: 0.8
-        });
-        
-        sprite.userData.isImage = false;
+        // If it's a mesh, convert back to sprite
+        if (sprite.type === 'Mesh') {
+            // Remove old mesh from scene
+            this.scene.remove(sprite);
+            sprite.material.dispose();
+            if (sprite.geometry) sprite.geometry.dispose();
+            
+            // Create new sprite
+            const material = new THREE.SpriteMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.8,
+                sizeAttenuation: true
+            });
+            const newSprite = new THREE.Sprite(material);
+            newSprite.position.copy(sprite.position);
+            newSprite.scale.set(0.5, 0.5, 1);
+            newSprite.userData = sprite.userData;
+            newSprite.userData.isImage = false;
+            newSprite.userData.isSprite = true;
+            
+            // Replace in array
+            const index = this.imageSprites.indexOf(sprite);
+            if (index !== -1) {
+                this.imageSprites[index] = newSprite;
+            }
+            this.scene.add(newSprite);
+        } else {
+            // Already a sprite, just update material
+            sprite.material.dispose();
+            sprite.material = new THREE.SpriteMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.8,
+                sizeAttenuation: true
+            });
+            sprite.userData.isImage = false;
+            sprite.userData.isSprite = true;
+        }
     }
 
     animate() {
