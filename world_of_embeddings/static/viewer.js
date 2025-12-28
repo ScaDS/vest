@@ -999,6 +999,17 @@ class ImageViewer {
             const pos = keyframe.position;
             info.textContent = `${index + 1}. (${pos.x.toFixed(0)}, ${pos.y.toFixed(0)}, ${pos.z.toFixed(0)})`;
             
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.className = 'keyframe-item-buttons';
+            
+            const gotoBtn = document.createElement('div');
+            gotoBtn.className = 'keyframe-item-goto';
+            gotoBtn.textContent = 'Goto';
+            gotoBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.jumpToKeyframe(index);
+            });
+            
             const deleteBtn = document.createElement('div');
             deleteBtn.className = 'keyframe-item-delete';
             deleteBtn.textContent = 'Del';
@@ -1007,13 +1018,11 @@ class ImageViewer {
                 this.deleteKeyframe(index);
             });
             
-            // Click to jump to keyframe
-            item.addEventListener('click', () => {
-                this.jumpToKeyframe(index);
-            });
+            buttonsContainer.appendChild(gotoBtn);
+            buttonsContainer.appendChild(deleteBtn);
             
             item.appendChild(info);
-            item.appendChild(deleteBtn);
+            item.appendChild(buttonsContainer);
             list.appendChild(item);
         });
     }
