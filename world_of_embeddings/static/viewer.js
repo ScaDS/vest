@@ -98,6 +98,7 @@ class ImageViewer {
         this.scene = null;
         this.camera = null;
         this.renderer = null;
+        this.nearestCount = 10;
         this.controller = null;
         this.points = [];
         this.imageSprites = [];
@@ -163,6 +164,9 @@ class ImageViewer {
 
         // Setup image size slider
         this.initImageSizeSlider();
+
+        // Setup nearest count slider
+        this.initNearestCountSlider();
 
         // Setup side-views
         this.initSideViews();
@@ -266,6 +270,24 @@ class ImageViewer {
         
         // Listen for changes
         slider.addEventListener('input', updateImageSize);
+    }
+
+    initNearestCountSlider() {
+        const slider = document.getElementById('nearest-count-slider');
+        const valueDisplay = document.getElementById('nearest-count-value');
+        
+        if (!slider || !valueDisplay) return;
+        
+        const updateNearestCount = () => {
+            this.nearestCount = parseInt(slider.value);
+            valueDisplay.textContent = this.nearestCount;
+        };
+        
+        // Initialize display
+        updateNearestCount();
+        
+        // Listen for changes
+        slider.addEventListener('input', updateNearestCount);
     }
 
     initSideViews() {
@@ -470,29 +492,48 @@ class ImageViewer {
     updateNearestPoint() {
         if (this.imageSprites.length === 0) return;
 
-        // Calculate distances for all sprites
-        const distances = this.imageSprites.map((sprite, index) => ({
-            sprite,
-            distance: this.camera.position.distanceTo(sprite.position),
-            index
-        }));
+        // Get camera forward direction
+        const cameraForward = new THREE.Vector3();
+        this.camera.getWorldDirection(cameraForward);
 
-        // Sort by distance
-        distances.sort((a, b) => a.distance - b.distance);
+        // Calculate distances for all sprites and check if they're in front of camera
+        const distances = this.imageSprites.map((sprite, index) => {
+            const distance = this.camera.position.distanceTo(sprite.position);
+            
+            // Vector from camera to sprite
+            const toSprite = new THREE.Vector3().subVectors(sprite.position, this.camera.position);
+            toSprite.normalize();
+            
+            // Dot product: positive means in front, negative means behind
+            const dotProduct = cameraForward.dot(toSprite);
+            
+            return {
+                sprite,
+                distance,
+                index,
+                inFront: dotProduct > 0
+            };
+        });
 
-        // Get the 10 closest
-        const closestCount = Math.min(10, distances.length);
-        const closest = distances.slice(0, closestCount);
+        // Filter to only include sprites in front of camera, then sort by distance
+        const inFrontSprites = distances.filter(item => item.inFront);
+        inFrontSprites.sort((a, b) => a.distance - b.distance);
+
+        // Get the nearest N closest that are in front
+        const closestCount = Math.min(this.nearestCount, inFrontSprites.length);
+        const closest = inFrontSprites.slice(0, closestCount);
         
-        // Find min and max distance for normalization
-        const maxDist = distances[distances.length - 1].distance;
-        const minDist = distances[0].distance;
+        // Find min and max distance for normalization (only among sprites in front)
+        const maxDist = inFrontSprites.length > 0 ? inFrontSprites[inFrontSprites.length - 1].distance : 0;
+        const minDist = inFrontSprites.length > 0 ? inFrontSprites[0].distance : 0;
         const distRange = maxDist - minDist;
 
         // Update all sprites
         distances.forEach((item, idx) => {
-            const { sprite, distance } = item;
-            const isClosest = idx < closestCount;
+            const { sprite, distance, inFront } = item;
+            
+            // Only show images for sprites that are in front of the camera
+            const isClosest = inFront && closest.some(c => c.sprite === sprite);
 
             if (isClosest) {
                 // Load as image if not already loaded
