@@ -197,46 +197,16 @@ class ImageViewer {
             const y = point.y;
             const z = point.z;
 
-            // Create a simple placeholder geometry while loading image
-            const geometry = new THREE.PlaneGeometry(5, 5);
+            // Create a simple placeholder geometry (will be replaced based on distance)
+            const geometry = new THREE.CircleGeometry(0.5, 8);
             const material = new THREE.MeshBasicMaterial({
-                color: 0x4a9eff,
-                wireframe: false
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.8
             });
             const mesh = new THREE.Mesh(geometry, material);
             mesh.position.set(x, y, z);
-            mesh.userData = { filename, index };
-
-            // Try to load actual image
-            const imageUrl = `/api/image/${filename}`;
-            textureLoader.load(
-                imageUrl,
-                (texture) => {
-                    // Calculate aspect ratio and resize geometry
-                    const aspect = texture.image.width / texture.image.height;
-                    const height = 5;
-                    const width = height * aspect;
-                    
-                    const newGeometry = new THREE.PlaneGeometry(width, height);
-                    const imageMaterial = new THREE.MeshBasicMaterial({ 
-                        map: texture,
-                        transparent: true,
-                        side: THREE.DoubleSide
-                    });
-                    
-                    // Dispose of old material and geometry
-                    mesh.material.dispose();
-                    mesh.geometry.dispose();
-                    
-                    mesh.geometry = newGeometry;
-                    mesh.material = imageMaterial;
-                    mesh.userData.texture = texture;
-                },
-                undefined,
-                (error) => {
-                    console.warn(`Failed to load image: ${filename}`, error);
-                }
-            );
+            mesh.userData = { filename, index, imageUrl: `/api/image/${filename}`, textureLoader };
 
             this.scene.add(mesh);
             this.imageSprites.push(mesh);
@@ -327,23 +297,137 @@ class ImageViewer {
     updateNearestPoint() {
         if (this.imageSprites.length === 0) return;
 
-        let nearest = null;
-        let minDist = Infinity;
+        // Calculate distances for all sprites
+        const distances = this.imageSprites.map((sprite, index) => ({
+            sprite,
+            distance: this.camera.position.distanceTo(sprite.position),
+            index
+        }));
 
-        this.imageSprites.forEach(sprite => {
-            const dist = this.camera.position.distanceTo(sprite.position);
-            if (dist < minDist) {
-                minDist = dist;
-                nearest = sprite;
+        // Sort by distance
+        distances.sort((a, b) => a.distance - b.distance);
+
+        // Get the 10 closest
+        const closestCount = Math.min(10, distances.length);
+        const closest = distances.slice(0, closestCount);
+        
+        // Find min and max distance for normalization
+        const maxDist = distances[distances.length - 1].distance;
+        const minDist = distances[0].distance;
+        const distRange = maxDist - minDist;
+
+        // Update all sprites
+        distances.forEach((item, idx) => {
+            const { sprite, distance } = item;
+            const isClosest = idx < closestCount;
+
+            if (isClosest) {
+                // Load as image if not already loaded
+                if (!sprite.userData.isImage) {
+                    this.loadSpriteAsImage(sprite);
+                }
+            } else {
+                // Convert to dot if it's currently an image
+                if (sprite.userData.isImage) {
+                    this.convertSpriteToCircle(sprite);
+                }
+                
+                // Update dot appearance based on distance
+                // Normalize distance (0 = closest, 1 = furthest)
+                const normalizedDist = distRange > 0 ? (distance - minDist) / distRange : 0;
+                
+                // Size: 50px (close) to 5px (far)
+                const size = 50 - (normalizedDist * 45);
+                
+                // Brightness: white (close) to grey (far)
+                // RGB: (255,255,255) to (100,100,100)
+                const brightness = 255 - (normalizedDist * 155);
+                const color = (brightness << 16) | (brightness << 8) | brightness;
+                
+                // Opacity: more opaque when closer
+                const opacity = 1.0 - (normalizedDist * 0.3);
+                
+                // Update geometry size
+                if (sprite.geometry.type === 'CircleGeometry') {
+                    sprite.geometry.dispose();
+                    sprite.geometry = new THREE.CircleGeometry(size * 0.01, 8);
+                }
+                
+                // Update material
+                sprite.material.color.setHex(color);
+                sprite.material.opacity = opacity;
             }
+            
+            // Always face camera
+            sprite.lookAt(this.camera.position);
         });
 
-        if (nearest && minDist < 1000) {
+        // Update UI with nearest point
+        if (closest[0] && closest[0].distance < 1000) {
             document.getElementById('near-point').textContent = 
-                `${nearest.userData.filename} (${minDist.toFixed(1)}m)`;
+                `${closest[0].sprite.userData.filename} (${closest[0].distance.toFixed(1)}m)`;
         } else {
             document.getElementById('near-point').textContent = '-';
         }
+    }
+
+    loadSpriteAsImage(sprite) {
+        const textureLoader = new THREE.TextureLoader();
+        const imageUrl = sprite.userData.imageUrl;
+        
+        sprite.userData.isImage = true;
+        
+        textureLoader.load(
+            imageUrl,
+            (texture) => {
+                // Calculate aspect ratio and resize geometry
+                const aspect = texture.image.width / texture.image.height;
+                const height = 5;
+                const width = height * aspect;
+                
+                const newGeometry = new THREE.PlaneGeometry(width, height);
+                const imageMaterial = new THREE.MeshBasicMaterial({ 
+                    map: texture,
+                    transparent: true,
+                    side: THREE.DoubleSide
+                });
+                
+                // Dispose of old material and geometry
+                sprite.material.dispose();
+                sprite.geometry.dispose();
+                
+                sprite.geometry = newGeometry;
+                sprite.material = imageMaterial;
+                sprite.userData.texture = texture;
+            },
+            undefined,
+            (error) => {
+                console.warn(`Failed to load image: ${sprite.userData.filename}`, error);
+                sprite.userData.isImage = false;
+            }
+        );
+    }
+
+    convertSpriteToCircle(sprite) {
+        // Dispose of texture if it exists
+        if (sprite.userData.texture) {
+            sprite.userData.texture.dispose();
+            delete sprite.userData.texture;
+        }
+        
+        // Dispose old geometry and material
+        sprite.material.dispose();
+        sprite.geometry.dispose();
+        
+        // Create circle geometry and basic material
+        sprite.geometry = new THREE.CircleGeometry(0.5, 8);
+        sprite.material = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.8
+        });
+        
+        sprite.userData.isImage = false;
     }
 
     animate() {
