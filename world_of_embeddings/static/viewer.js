@@ -60,7 +60,7 @@ class CameraController {
         });
     }
 
-    update() {
+    update(deltaTime = 1) {
         const euler = new THREE.Euler(0, 0, 0, 'YXZ');
         euler.setFromQuaternion(this.camera.quaternion);
 
@@ -79,19 +79,16 @@ class CameraController {
         // Adjust forward speed with I/J (allow backward motion)
         const accelerating = this.keys['i'];
         const braking = this.keys['k'];
-        if (accelerating) this.forwardSpeed = Math.min(this.maxSpeed, this.forwardSpeed + this.accelStep);
-        if (braking) this.forwardSpeed = Math.max(-this.maxSpeed, this.forwardSpeed - this.accelStep);
+        if (accelerating) this.forwardSpeed = Math.min(this.maxSpeed, this.forwardSpeed + this.accelStep * deltaTime);
+        if (braking) this.forwardSpeed = Math.max(-this.maxSpeed, this.forwardSpeed - this.accelStep * deltaTime);
 
-        if (!accelerating && !braking) {
-            this.forwardSpeed *= this.drag;
-            if (Math.abs(this.forwardSpeed) < 1e-4) this.forwardSpeed = 0;
-        }
+        // No drag - speed remains constant unless user actively changes it
 
         // Move along the view direction (positive = forward, negative = backward)
         if (Math.abs(this.forwardSpeed) > 0) {
             const forward = new THREE.Vector3();
             this.camera.getWorldDirection(forward);
-            this.camera.position.add(forward.multiplyScalar(this.forwardSpeed));
+            this.camera.position.add(forward.multiplyScalar(this.forwardSpeed * deltaTime));
         }
     }
 }
@@ -109,6 +106,7 @@ class ImageViewer {
         this.mouse = new THREE.Vector2();
         this.bounds = null;
         this.imageSize = 0.5; // Default image size
+        this.lastTime = performance.now();
 
         // Mini side-views (XY, XZ, YZ)
         this.sideViews = {
@@ -644,8 +642,13 @@ class ImageViewer {
     animate() {
         requestAnimationFrame(() => this.animate());
 
+        // Calculate deltaTime for frame-rate independent movement
+        const currentTime = performance.now();
+        const deltaTime = Math.min((currentTime - this.lastTime) / 16.67, 2); // Normalize to 60fps, cap at 2x
+        this.lastTime = currentTime;
+
         // Update camera controller
-        this.controller.update();
+        this.controller.update(deltaTime);
 
         // Update UI
         const pos = this.camera.position;
