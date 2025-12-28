@@ -70,8 +70,8 @@ class CameraController {
         if (this.keys['s']) targetVelocity.sub(forward);
         if (this.keys['d']) targetVelocity.add(right);
         if (this.keys['a']) targetVelocity.sub(right);
-        if (this.keys[' ']) targetVelocity.y += 1;
-        if (this.keys['control']) targetVelocity.y -= 1;
+        if (this.keys['e']) targetVelocity.y += 1;
+        if (this.keys['y']) targetVelocity.y -= 1;
 
         targetVelocity.normalize().multiplyScalar(this.speed);
 

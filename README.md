@@ -98,8 +98,8 @@ Your data must have the following columns:
 
 ### Camera Movement
 - **W / A / S / D** - Move forward, left, backward, right
-- **Space** - Move up
-- **Ctrl** - Move down
+- **E** - Move up
+- **Y** - Move down
 - **Mouse** - Look around (click to enable pointer lock)
 
 ### Interaction
