@@ -297,6 +297,9 @@ class ImageViewer {
             const exponent = parseFloat(slider.value);
             this.imageSize = Math.pow(10, exponent);
             valueDisplay.textContent = this.imageSize.toFixed(2);
+            
+            // Reload all images that are currently loaded
+            this.reloadLoadedImages();
         };
         
         // Initialize display
@@ -304,6 +307,15 @@ class ImageViewer {
         
         // Listen for changes
         slider.addEventListener('input', updateImageSize);
+    }
+    
+    reloadLoadedImages() {
+        // Reload all sprites that currently have images loaded
+        this.imageSprites.forEach(sprite => {
+            if (sprite.userData.isImage) {
+                this.loadSpriteAsImage(sprite);
+            }
+        });
     }
 
     initNearestCountSlider() {
