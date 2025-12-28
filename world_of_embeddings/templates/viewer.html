@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World of Embeddings - 3D Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+
+        #canvas {
+            display: block;
+            width: 100%;
+            height: 100vh;
+        }
+
+        #ui-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 350px;
+            z-index: 100;
+        }
+
+        #ui-panel h2 {
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .info-group {
+            margin-bottom: 15px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .info-label {
+            color: #aaa;
+            text-transform: uppercase;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            margin-bottom: 3px;
+        }
+
+        .info-value {
+            color: #4a9eff;
+            font-family: 'Courier New', monospace;
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        #controls h3 {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .control-section {
+            margin-bottom: 10px;
+        }
+
+        .control-key {
+            color: #ffd700;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+
+        #image-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 20px;
+            border-radius: 8px;
+            z-index: 200;
+            display: none;
+            max-width: 80vw;
+            max-height: 80vh;
+        }
+
+        #image-popup img {
+            max-width: 100%;
+            max-height: 70vh;
+            border-radius: 4px;
+        }
+
+        .close-popup {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 28px;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .close-popup:hover {
+            color: #fff;
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+            z-index: 150;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #4a9eff;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">
+        <div class="spinner"></div>
+        <p>Loading 3D viewer...</p>
+    </div>
+
+    <div id="ui-panel">
+        <h2>World of Embeddings</h2>
+        <div class="info-group">
+            <div class="info-label">Points</div>
+            <div class="info-value" id="point-count">0</div>
+        </div>
+        <div class="info-group">
+            <div class="info-label">Camera Position</div>
+            <div class="info-value" id="camera-pos">0, 0, 0</div>
+        </div>
+        <div class="info-group">
+            <div class="info-label">Bounds</div>
+            <div class="info-value" id="bounds">-</div>
+        </div>
+        <div class="info-group">
+            <div class="info-label">Near Point</div>
+            <div class="info-value" id="near-point">-</div>
+        </div>
+    </div>
+
+    <div id="controls">
+        <h3>Controls</h3>
+        <div class="control-section">
+            <div><span class="control-key">W/A/S/D</span> - Move</div>
+            <div><span class="control-key">Space/Ctrl</span> - Up/Down</div>
+            <div><span class="control-key">Mouse</span> - Look Around</div>
+        </div>
+        <div class="control-section">
+            <div><span class="control-key">Click Image</span> - View Full Size</div>
+            <div><span class="control-key">Esc</span> - Close Popup</div>
+        </div>
+    </div>
+
+    <div id="image-popup">
+        <span class="close-popup">&times;</span>
+        <img id="popup-image" src="" alt="Image" />
+        <div style="margin-top: 10px; font-size: 12px; color: #aaa;">
+            Click anywhere or press Esc to close
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="{{ url_for('static', filename='viewer.js') }}"></script>
+</body>
+</html>
