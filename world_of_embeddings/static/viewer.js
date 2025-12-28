@@ -70,31 +70,31 @@ class CameraController {
         euler.setFromQuaternion(this.camera.quaternion);
 
         // Keyboard-driven view rotation (mouse still works)
-        if (this.keys['w']) euler.x += this.rotationStep;
-        if (this.keys['s']) euler.x -= this.rotationStep;
-        if (this.keys['a']) euler.y += this.rotationStep;
-        if (this.keys['d']) euler.y -= this.rotationStep;
-        if (this.keys['e']) euler.z -= this.rotationStep;
-        if (this.keys['y']) euler.z += this.rotationStep;
+        if (this.keys['i']) euler.x += this.rotationStep;
+        if (this.keys['k']) euler.x -= this.rotationStep;
+        if (this.keys['j']) euler.y += this.rotationStep;
+        if (this.keys['l']) euler.y -= this.rotationStep;
+        if (this.keys['o']) euler.z -= this.rotationStep;
+        if (this.keys['m']) euler.z += this.rotationStep;
 
         // Prevent flipping over the top/bottom
         euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
         this.camera.quaternion.setFromEuler(euler);
 
-        // Adjust forward speed with I/K (allow backward motion)
+        // Adjust forward speed with W/S (allow backward motion)
         this.forwardSpeed = 0;
-        if (this.keys['i']) this.forwardSpeed += this.movementStep;
-        if (this.keys['k']) this.forwardSpeed -= this.movementStep;
+        if (this.keys['w']) this.forwardSpeed += this.movementStep;
+        if (this.keys['s']) this.forwardSpeed -= this.movementStep;
 
-        // Adjust strafe speed with J/L (left/right)
+        // Adjust strafe speed with A/D (left/right)
         this.strafeSpeed = 0;
-        if (this.keys['j']) this.strafeSpeed -= this.movementStep;
-        if (this.keys['l']) this.strafeSpeed += this.movementStep;
+        if (this.keys['a']) this.strafeSpeed -= this.movementStep;
+        if (this.keys['d']) this.strafeSpeed += this.movementStep;
 
-        // Adjust vertical speed with O/M (up/down)
+        // Adjust vertical speed with E/Y (up/down)
         this.verticalSpeed = 0;
-        if (this.keys['o']) this.verticalSpeed += this.movementStep;
-        if (this.keys['m']) this.verticalSpeed -= this.movementStep;
+        if (this.keys['e']) this.verticalSpeed += this.movementStep;
+        if (this.keys['y']) this.verticalSpeed -= this.movementStep;
 
         // No drag - speed remains constant unless user actively changes it
 
