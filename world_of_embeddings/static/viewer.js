@@ -4,8 +4,9 @@
  */
 
 class CameraController {
-    constructor(camera) {
+    constructor(camera, element) {
         this.camera = camera;
+        this.element = element || document.body;
         this.keys = {};
         this.mouse = { x: 0, y: 0, locked: false };
         this.forwardSpeed = 0;
@@ -44,8 +45,8 @@ class CameraController {
 
                 const euler = new THREE.Euler(0, 0, 0, 'YXZ');
                 euler.setFromQuaternion(this.camera.quaternion);
-                euler.rotateY(-movementX * 0.005);
-                euler.rotateX(-movementY * 0.005);
+                euler.y -= movementX * 0.002;
+                euler.x -= movementY * 0.002;
                 
                 // Clamp vertical rotation
                 euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
@@ -54,14 +55,19 @@ class CameraController {
             }
         });
 
-        document.addEventListener('click', () => {
-            document.body.requestPointerLock =
-                document.body.requestPointerLock || document.body.mozRequestPointerLock;
-            document.body.requestPointerLock();
+        // Click on the canvas element to request pointer lock
+        this.element.addEventListener('click', () => {
+            this.element.requestPointerLock =
+                this.element.requestPointerLock || this.element.mozRequestPointerLock;
+            this.element.requestPointerLock();
         });
 
         document.addEventListener('pointerlockchange', () => {
-            this.mouse.locked = document.pointerLockElement === document.body;
+            this.mouse.locked = document.pointerLockElement === this.element;
+        });
+        
+        document.addEventListener('mozpointerlockchange', () => {
+            this.mouse.locked = document.mozPointerLockElement === this.element;
         });
     }
 
@@ -168,8 +174,8 @@ class ImageViewer {
         this.renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(this.renderer.domElement);
 
-        // Camera controller
-        this.controller = new CameraController(this.camera);
+        // Camera controller - pass renderer.domElement for pointer lock
+        this.controller = new CameraController(this.camera, this.renderer.domElement);
 
         // Lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
