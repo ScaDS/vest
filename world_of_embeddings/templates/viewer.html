@@ -168,12 +168,28 @@
             <div class="info-value" id="camera-pos">0, 0, 0</div>
         </div>
         <div class="info-group">
+            <div class="info-label">Speed</div>
+            <div class="info-value" id="speed">0.00</div>
+        </div>
+        <div class="info-group">
+            <div class="info-label">View Angle (Pitch, Yaw, Roll)</div>
+            <div class="info-value" id="view-angle">0°, 0°, 0°</div>
+        </div>
+        <div class="info-group">
             <div class="info-label">Bounds</div>
             <div class="info-value" id="bounds">-</div>
         </div>
         <div class="info-group">
             <div class="info-label">Near Point</div>
             <div class="info-value" id="near-point">-</div>
+        </div>
+        <div class="info-group">
+            <div class="info-label">Image Size: <span id="image-size-value">0.5</span></div>
+            <input type="range" id="image-size-slider" min="-2" max="1" step="0.01" value="-0.301" style="width: 100%; margin-top: 5px;">
+            <div style="font-size: 10px; color: #666; margin-top: 2px; display: flex; justify-content: space-between;">
+                <span>0.01</span>
+                <span>10</span>
+            </div>
         </div>
     </div>
 

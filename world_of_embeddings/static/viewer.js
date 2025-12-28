@@ -108,6 +108,7 @@ class ImageViewer {
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
         this.bounds = null;
+        this.imageSize = 0.5; // Default image size
 
         // Mini side-views (XY, XZ, YZ)
         this.sideViews = {
@@ -161,6 +162,9 @@ class ImageViewer {
 
         // Event listeners
         window.addEventListener('resize', () => this.onWindowResize());
+
+        // Setup image size slider
+        this.initImageSizeSlider();
 
         // Setup side-views
         this.initSideViews();
@@ -243,6 +247,27 @@ class ImageViewer {
             );
             this.camera.lookAt(centerX, centerY, centerZ);
         }
+    }
+
+    initImageSizeSlider() {
+        const slider = document.getElementById('image-size-slider');
+        const valueDisplay = document.getElementById('image-size-value');
+        
+        if (!slider || !valueDisplay) return;
+        
+        // Logarithmic scale: slider value is the exponent (base 10)
+        // Range: -2 to 1 (0.01 to 10)
+        const updateImageSize = () => {
+            const exponent = parseFloat(slider.value);
+            this.imageSize = Math.pow(10, exponent);
+            valueDisplay.textContent = this.imageSize.toFixed(2);
+        };
+        
+        // Initialize display
+        updateImageSize();
+        
+        // Listen for changes
+        slider.addEventListener('input', updateImageSize);
     }
 
     initSideViews() {
@@ -489,6 +514,19 @@ class ImageViewer {
                 // Size: 50px (close) to 5px (far)
                 const size = 50 - (normalizedDist * 45);
                 
+                // Calculate maximum size based on screen dimensions (10% of screen)
+                const vFOV = this.camera.fov * Math.PI / 180;
+                const visibleHeight = 2 * Math.tan(vFOV / 2) * distance;
+                const visibleWidth = visibleHeight * this.camera.aspect;
+                
+                const maxRadius = Math.min(visibleHeight, visibleWidth) * 0.1 / 2;
+                
+                // Apply size limit
+                let finalSize = size * 0.01;
+                if (finalSize > maxRadius) {
+                    finalSize = maxRadius;
+                }
+                
                 // Brightness: white (close) to grey (far)
                 // RGB: (255,255,255) to (100,100,100)
                 const brightness = 255 - (normalizedDist * 155);
@@ -500,7 +538,7 @@ class ImageViewer {
                 // Update geometry size
                 if (sprite.geometry.type === 'CircleGeometry') {
                     sprite.geometry.dispose();
-                    sprite.geometry = new THREE.CircleGeometry(size * 0.01, 8);
+                    sprite.geometry = new THREE.CircleGeometry(finalSize, 8);
                 }
                 
                 // Update material
@@ -532,10 +570,33 @@ class ImageViewer {
             (texture) => {
                 // Calculate aspect ratio and resize geometry
                 const aspect = texture.image.width / texture.image.height;
-                const height = 5;
+                const height = this.imageSize;
                 const width = height * aspect;
                 
-                const newGeometry = new THREE.PlaneGeometry(width, height);
+                // Calculate maximum size based on screen dimensions (10% of screen)
+                const distance = this.camera.position.distanceTo(sprite.position);
+                const vFOV = this.camera.fov * Math.PI / 180;
+                const visibleHeight = 2 * Math.tan(vFOV / 2) * distance;
+                const visibleWidth = visibleHeight * this.camera.aspect;
+                
+                const maxHeight = visibleHeight * 0.1;
+                const maxWidth = visibleWidth * 0.1;
+                
+                // Apply size limits
+                let finalHeight = height;
+                let finalWidth = width;
+                
+                if (finalHeight > maxHeight) {
+                    finalHeight = maxHeight;
+                    finalWidth = finalHeight * aspect;
+                }
+                
+                if (finalWidth > maxWidth) {
+                    finalWidth = maxWidth;
+                    finalHeight = finalWidth / aspect;
+                }
+                
+                const newGeometry = new THREE.PlaneGeometry(finalWidth, finalHeight);
                 const imageMaterial = new THREE.MeshBasicMaterial({ 
                     map: texture,
                     transparent: true,
@@ -590,6 +651,19 @@ class ImageViewer {
         const pos = this.camera.position;
         document.getElementById('camera-pos').textContent = 
             `${pos.x.toFixed(0)}, ${pos.y.toFixed(0)}, ${pos.z.toFixed(0)}`;
+
+        // Update speed display
+        const speed = this.controller.forwardSpeed;
+        document.getElementById('speed').textContent = speed.toFixed(2);
+
+        // Update view angle display
+        const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+        euler.setFromQuaternion(this.camera.quaternion);
+        const pitch = (euler.x * 180 / Math.PI).toFixed(0);
+        const yaw = (euler.y * 180 / Math.PI).toFixed(0);
+        const roll = (euler.z * 180 / Math.PI).toFixed(0);
+        document.getElementById('view-angle').textContent = 
+            `${pitch}°, ${yaw}°, ${roll}°`;
 
         this.updateNearestPoint();
 
