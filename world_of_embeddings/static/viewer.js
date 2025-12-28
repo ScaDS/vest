@@ -797,8 +797,15 @@ class ImageViewer {
         textureLoader.load(
             imageUrl,
             (texture) => {
+                let finalTexture = texture;
+                
+                // Downsample image if size factor is 0.5 or smaller
+                if (this.imageSize <= 0.5) {
+                    finalTexture = this.downsampleTexture(texture, this.imageSize);
+                }
+                
                 // Calculate aspect ratio and resize geometry
-                const aspect = texture.image.width / texture.image.height;
+                const aspect = finalTexture.image.width / finalTexture.image.height;
                 const baseHeight = this.imageSize;
                 const baseWidth = baseHeight * aspect;
                 
@@ -814,7 +821,7 @@ class ImageViewer {
                 
                 const newGeometry = new THREE.PlaneGeometry(finalWidth, finalHeight);
                 const imageMaterial = new THREE.MeshBasicMaterial({ 
-                    map: texture,
+                    map: finalTexture,
                     transparent: true,
                     side: THREE.DoubleSide
                 });
@@ -825,7 +832,7 @@ class ImageViewer {
                 
                 sprite.geometry = newGeometry;
                 sprite.material = imageMaterial;
-                sprite.userData.texture = texture;
+                sprite.userData.texture = finalTexture;
             },
             undefined,
             (error) => {
@@ -833,6 +840,43 @@ class ImageViewer {
                 sprite.userData.isImage = false;
             }
         );
+    }
+    
+    downsampleTexture(texture, sizeFactor) {
+        // Calculate downsampling factor (e.g., 0.5 -> sample every 2nd pixel, 0.25 -> every 4th)
+        const downsampleFactor = Math.max(1, Math.round(1.0 / sizeFactor));
+        
+        const originalImage = texture.image;
+        const originalWidth = originalImage.width;
+        const originalHeight = originalImage.height;
+        
+        // Calculate new dimensions
+        const newWidth = Math.max(1, Math.floor(originalWidth / downsampleFactor));
+        const newHeight = Math.max(1, Math.floor(originalHeight / downsampleFactor));
+        
+        // Create canvas for downsampled image
+        const canvas = document.createElement('canvas');
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+        const ctx = canvas.getContext('2d');
+        
+        // Disable image smoothing for nearest-neighbor sampling
+        ctx.imageSmoothingEnabled = false;
+        ctx.mozImageSmoothingEnabled = false;
+        ctx.webkitImageSmoothingEnabled = false;
+        ctx.msImageSmoothingEnabled = false;
+        
+        // Draw downsampled image
+        ctx.drawImage(originalImage, 0, 0, newWidth, newHeight);
+        
+        // Create new texture from canvas
+        const downsampledTexture = new THREE.CanvasTexture(canvas);
+        downsampledTexture.needsUpdate = true;
+        
+        // Dispose original texture
+        texture.dispose();
+        
+        return downsampledTexture;
     }
 
     convertSpriteToCircle(sprite) {
