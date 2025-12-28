@@ -16,7 +16,7 @@ class CameraController {
         this.accelStep = 0.05;
         this.drag = 0.98;
         this.movementStep = 0.1;
-        this.rotationStep = 0.02;
+        this.rotationStep = 0.005;
 
         this.setupEventListeners();
     }
@@ -69,6 +69,23 @@ class CameraController {
         document.addEventListener('mozpointerlockchange', () => {
             this.mouse.locked = document.mozPointerLockElement === this.element;
         });
+
+        // Mouse wheel controls for forward/backward movement
+        this.element.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            
+            // Get camera forward direction
+            const forward = new THREE.Vector3();
+            this.camera.getWorldDirection(forward);
+            
+            // Scroll down (positive deltaY) moves backward, scroll up (negative) moves forward
+            // Scale the movement by wheel delta and a sensitivity factor
+            const scrollSensitivity = 0.05;
+            const moveAmount = -e.deltaY * scrollSensitivity;
+            
+            // Move camera along its forward direction
+            this.camera.position.add(forward.multiplyScalar(moveAmount));
+        }, { passive: false });
     }
 
     update(deltaTime = 1) {
@@ -302,6 +319,9 @@ class ImageViewer {
             
             // Reload all images that are currently loaded
             this.reloadLoadedImages();
+            
+            // Redraw side views with new point sizes
+            this.drawSideViewsStatic();
         };
         
         // Initialize display
@@ -569,7 +589,7 @@ class ImageViewer {
 
             // Points
             const [a, b] = v.axes;
-            const radius = 2; // fixed size
+            const radius = 2 * this.imageSize; // Scale with image size
             ctx.fillStyle = '#ffffff';
             this.points.forEach(p => {
                 const px = this.worldToCanvas(v, p[a], p[b]);
@@ -626,7 +646,7 @@ class ImageViewer {
             const posPx = this.worldToCanvas(v, camPos[aName], camPos[bName]);
             ctx.fillStyle = '#ff5e5e';
             ctx.beginPath();
-            ctx.arc(posPx.x, posPx.y, 3, 0, Math.PI * 2);
+            ctx.arc(posPx.x, posPx.y, 3 * this.imageSize, 0, Math.PI * 2);
             ctx.fill();
 
             // Camera direction arrow in plane
