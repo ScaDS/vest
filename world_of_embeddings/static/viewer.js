@@ -165,7 +165,7 @@ class ImageViewer {
         // Camera setup
         const width = window.innerWidth;
         const height = window.innerHeight;
-        this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 10000);
+        this.camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 10000);
         this.camera.position.set(0, 50, 100);
         this.camera.lookAt(0, 0, 0);
 
@@ -202,9 +202,6 @@ class ImageViewer {
 
         // Setup nearest count slider
         this.initNearestCountSlider();
-
-        // Setup render images checkbox
-        this.initRenderImagesCheckbox();
 
         // Setup side-views
         this.initSideViews();
@@ -331,7 +328,8 @@ class ImageViewer {
         
         const updateNearestCount = () => {
             this.nearestCount = parseInt(slider.value);
-            valueDisplay.textContent = this.nearestCount;
+            // Display "All" when at maximum (500)
+            valueDisplay.textContent = this.nearestCount >= 500 ? 'All' : this.nearestCount;
         };
         
         // Initialize display
@@ -339,22 +337,6 @@ class ImageViewer {
         
         // Listen for changes
         slider.addEventListener('input', updateNearestCount);
-    }
-
-    initRenderImagesCheckbox() {
-        const checkbox = document.getElementById('render-images-checkbox');
-        
-        if (!checkbox) return;
-        
-        const updateRenderImages = () => {
-            this.renderImages = checkbox.checked;
-        };
-        
-        // Initialize state
-        updateRenderImages();
-        
-        // Listen for changes
-        checkbox.addEventListener('change', updateRenderImages);
     }
 
     initSideViews() {
@@ -736,7 +718,8 @@ class ImageViewer {
         inFrontSprites.sort((a, b) => a.distance - b.distance);
 
         // Get the nearest N closest that are in front
-        const closestCount = Math.min(this.nearestCount, inFrontSprites.length);
+        // If nearestCount is at max (500), show all images
+        const closestCount = this.nearestCount >= 500 ? inFrontSprites.length : Math.min(this.nearestCount, inFrontSprites.length);
         const closest = inFrontSprites.slice(0, closestCount);
         
         // Find min and max distance for normalization (only among sprites in front)
@@ -823,12 +806,8 @@ class ImageViewer {
         textureLoader.load(
             imageUrl,
             (texture) => {
-                let finalTexture = texture;
-                
-                // Downsample image if size factor is 0.5 or smaller
-                if (this.imageSize <= 0.5) {
-                    finalTexture = this.downsampleTexture(texture, this.imageSize);
-                }
+                // Use original texture without downsampling
+                const finalTexture = texture;
                 
                 // Calculate aspect ratio and resize geometry
                 const aspect = finalTexture.image.width / finalTexture.image.height;
@@ -888,42 +867,7 @@ class ImageViewer {
         );
     }
     
-    downsampleTexture(texture, sizeFactor) {
-        // Calculate downsampling factor (e.g., 0.5 -> sample every 2nd pixel, 0.25 -> every 4th)
-        const downsampleFactor = Math.max(1, Math.round(1.0 / sizeFactor));
-        
-        const originalImage = texture.image;
-        const originalWidth = originalImage.width;
-        const originalHeight = originalImage.height;
-        
-        // Calculate new dimensions
-        const newWidth = Math.max(1, Math.floor(originalWidth / downsampleFactor));
-        const newHeight = Math.max(1, Math.floor(originalHeight / downsampleFactor));
-        
-        // Create canvas for downsampled image
-        const canvas = document.createElement('canvas');
-        canvas.width = newWidth;
-        canvas.height = newHeight;
-        const ctx = canvas.getContext('2d');
-        
-        // Disable image smoothing for nearest-neighbor sampling
-        ctx.imageSmoothingEnabled = false;
-        ctx.mozImageSmoothingEnabled = false;
-        ctx.webkitImageSmoothingEnabled = false;
-        ctx.msImageSmoothingEnabled = false;
-        
-        // Draw downsampled image
-        ctx.drawImage(originalImage, 0, 0, newWidth, newHeight);
-        
-        // Create new texture from canvas
-        const downsampledTexture = new THREE.CanvasTexture(canvas);
-        downsampledTexture.needsUpdate = true;
-        
-        // Dispose original texture
-        texture.dispose();
-        
-        return downsampledTexture;
-    }
+
 
     convertSpriteToRectangle(sprite) {
         // Dispose of texture if it exists
