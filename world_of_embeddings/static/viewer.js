@@ -20,6 +20,10 @@ class CameraController {
     setupEventListeners() {
         // Keyboard controls
         document.addEventListener('keydown', (e) => {
+            // Space key stops motion
+            if (e.key === ' ') {
+                this.forwardSpeed = 0;
+            }
             this.keys[e.key.toLowerCase()] = true;
         });
 
