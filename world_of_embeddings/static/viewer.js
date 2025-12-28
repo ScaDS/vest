@@ -345,6 +345,146 @@ class ImageViewer {
             v.off.height = v.canvas.height;
             v.offCtx = v.off.getContext('2d');
         });
+
+        // Setup drag controls for each side view
+        this.setupSideViewDragControls();
+    }
+
+    setupSideViewDragControls() {
+        const views = [this.sideViews.xy, this.sideViews.xz, this.sideViews.yz];
+        
+        views.forEach((v) => {
+            if (!v.canvas) {
+                console.warn('Canvas not found for side view:', v.axes);
+                return;
+            }
+            
+            // Ensure canvas has pointer events enabled
+            v.canvas.style.cursor = 'crosshair';
+            
+            let mouseDownPos = null;
+            v.isDragging = false;
+            
+            v.canvas.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const rect = v.canvas.getBoundingClientRect();
+                mouseDownPos = {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top
+                };
+                v.isDragging = true;
+                v.canvas.style.cursor = 'grabbing';
+            });
+            
+            v.canvas.addEventListener('mousemove', (e) => {
+                if (v.isDragging && mouseDownPos) {
+                    v.canvas.style.cursor = 'grabbing';
+                }
+            });
+            
+            v.canvas.addEventListener('mouseup', (e) => {
+                if (!mouseDownPos) return;
+                
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const rect = v.canvas.getBoundingClientRect();
+                const mouseUpPos = {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top
+                };
+                
+                // Convert canvas positions to world coordinates
+                const worldDown = this.canvasToWorld(v, mouseDownPos.x, mouseDownPos.y);
+                const worldUp = this.canvasToWorld(v, mouseUpPos.x, mouseUpPos.y);
+                
+                // Apply the drag to camera position and orientation
+                this.applySideViewDrag(v, worldDown, worldUp);
+                
+                mouseDownPos = null;
+                v.isDragging = false;
+                v.canvas.style.cursor = 'crosshair';
+            });
+            
+            // Reset on mouse leave
+            v.canvas.addEventListener('mouseleave', () => {
+                mouseDownPos = null;
+                v.isDragging = false;
+                v.canvas.style.cursor = 'crosshair';
+            });
+        });
+    }
+
+    applySideViewDrag(view, worldDown, worldUp) {
+        const [axisA, axisB] = view.axes;
+        
+        // Get current camera direction to preserve the unchanged component
+        const currentDirection = new THREE.Vector3();
+        this.camera.getWorldDirection(currentDirection);
+        
+        // Set camera position based on mouse-down world coordinates
+        // Only update the axes that are being modified in this view
+        if (axisA === 'x' && axisB === 'y') {
+            // XY view: modify X and Y, preserve Z
+            this.camera.position.x = worldDown.a;
+            this.camera.position.y = worldDown.b;
+            // Z stays as is
+        } else if (axisA === 'x' && axisB === 'z') {
+            // XZ view: modify X and Z, preserve Y
+            this.camera.position.x = worldDown.a;
+            this.camera.position.z = worldDown.b;
+            // Y stays as is
+        } else if (axisA === 'y' && axisB === 'z') {
+            // YZ view: modify Y and Z, preserve X
+            this.camera.position.y = worldDown.a;
+            this.camera.position.z = worldDown.b;
+            // X stays as is
+        }
+        
+        // Calculate the direction vector from down to up (in world space)
+        const deltaA = worldUp.a - worldDown.a;
+        const deltaB = worldUp.b - worldDown.b;
+        
+        // Build the 3D direction vector based on which view we're in
+        // Preserve the component in the dimension not controlled by this view
+        let directionX, directionY, directionZ;
+        
+        if (axisA === 'x' && axisB === 'y') {
+            // XY view: drag in X-Y plane, preserve Z direction
+            directionX = deltaA;
+            directionY = deltaB;
+            directionZ = currentDirection.z;
+        } else if (axisA === 'x' && axisB === 'z') {
+            // XZ view: drag in X-Z plane, preserve Y direction
+            directionX = deltaA;
+            directionY = currentDirection.y;
+            directionZ = deltaB;
+        } else if (axisA === 'y' && axisB === 'z') {
+            // YZ view: drag in Y-Z plane, preserve X direction
+            directionX = currentDirection.x;
+            directionY = deltaA;
+            directionZ = deltaB;
+        }
+        
+        // Create direction vector and normalize it
+        const direction = new THREE.Vector3(directionX, directionY, directionZ);
+        const length = direction.length();
+        
+        // Only update orientation if there's a meaningful drag
+        if (length > 1e-6) {
+            direction.normalize();
+            
+            // Set camera to look in this direction
+            // We need to calculate the target point along this direction
+            const target = new THREE.Vector3(
+                this.camera.position.x + direction.x,
+                this.camera.position.y + direction.y,
+                this.camera.position.z + direction.z
+            );
+            
+            this.camera.lookAt(target);
+        }
     }
 
     computeSideViewScales() {
@@ -379,6 +519,15 @@ class ImageViewer {
         const x = w / 2 + (aVal - v.centerA) * v.scale;
         const y = h / 2 - (bVal - v.centerB) * v.scale;
         return { x, y };
+    }
+
+    canvasToWorld(v, canvasX, canvasY) {
+        // Inverse of worldToCanvas
+        const w = v.canvas.width;
+        const h = v.canvas.height;
+        const aVal = v.centerA + (canvasX - w / 2) / v.scale;
+        const bVal = v.centerB - (canvasY - h / 2) / v.scale;
+        return { a: aVal, b: bVal };
     }
 
     drawSideViewsStatic() {
@@ -584,21 +733,16 @@ class ImageViewer {
                 // Normalize distance (0 = closest, 1 = furthest)
                 const normalizedDist = distRange > 0 ? (distance - minDist) / distRange : 0;
                 
-                // Size: 50px (close) to 5px (far)
-                const size = 50 - (normalizedDist * 45);
+                // Base size in world units
+                const baseSize = 0.3;
                 
-                // Calculate maximum size based on screen dimensions (10% of screen)
-                const vFOV = this.camera.fov * Math.PI / 180;
-                const visibleHeight = 2 * Math.tan(vFOV / 2) * distance;
-                const visibleWidth = visibleHeight * this.camera.aspect;
+                // Distance-based scaling: use logarithmic scale to maintain more consistent size
+                // Scale grows slowly with distance to compensate for perspective shrinking
+                const minDistance = 5.0; // Reference distance
+                const distanceScale = Math.sqrt(distance / minDistance);
                 
-                const maxRadius = Math.min(visibleHeight, visibleWidth) * 0.1 / 2;
-                
-                // Apply size limit
-                let finalSize = size * 0.01;
-                if (finalSize > maxRadius) {
-                    finalSize = maxRadius;
-                }
+                // Apply distance scaling with slight size variation based on depth
+                let finalSize = baseSize * distanceScale * (1.0 - normalizedDist * 0.3);
                 
                 // Brightness: white (close) to grey (far)
                 // RGB: (255,255,255) to (100,100,100)
@@ -606,7 +750,7 @@ class ImageViewer {
                 const color = (brightness << 16) | (brightness << 8) | brightness;
                 
                 // Opacity: more opaque when closer
-                const opacity = 1.0 - (normalizedDist * 0.3);
+                const opacity = 1.0 - (normalizedDist * 0.4);
                 
                 // Update geometry size
                 if (sprite.geometry.type === 'CircleGeometry') {
@@ -643,31 +787,18 @@ class ImageViewer {
             (texture) => {
                 // Calculate aspect ratio and resize geometry
                 const aspect = texture.image.width / texture.image.height;
-                const height = this.imageSize;
-                const width = height * aspect;
+                const baseHeight = this.imageSize;
+                const baseWidth = baseHeight * aspect;
                 
-                // Calculate maximum size based on screen dimensions (10% of screen)
+                // Distance-based scaling: use square root to maintain more consistent size
+                // This compensates for perspective projection
                 const distance = this.camera.position.distanceTo(sprite.position);
-                const vFOV = this.camera.fov * Math.PI / 180;
-                const visibleHeight = 2 * Math.tan(vFOV / 2) * distance;
-                const visibleWidth = visibleHeight * this.camera.aspect;
+                const minDistance = 5.0; // Reference distance
+                const distanceScale = Math.sqrt(distance / minDistance);
                 
-                const maxHeight = visibleHeight * 0.1;
-                const maxWidth = visibleWidth * 0.1;
-                
-                // Apply size limits
-                let finalHeight = height;
-                let finalWidth = width;
-                
-                if (finalHeight > maxHeight) {
-                    finalHeight = maxHeight;
-                    finalWidth = finalHeight * aspect;
-                }
-                
-                if (finalWidth > maxWidth) {
-                    finalWidth = maxWidth;
-                    finalHeight = finalWidth / aspect;
-                }
+                // Apply distance scaling to maintain more consistent apparent size
+                let finalHeight = baseHeight * distanceScale;
+                let finalWidth = baseWidth * distanceScale;
                 
                 const newGeometry = new THREE.PlaneGeometry(finalWidth, finalHeight);
                 const imageMaterial = new THREE.MeshBasicMaterial({ 
