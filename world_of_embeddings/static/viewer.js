@@ -8,9 +8,11 @@ class CameraController {
         this.camera = camera;
         this.keys = {};
         this.mouse = { x: 0, y: 0, locked: false };
-        this.velocity = new THREE.Vector3();
-        this.speed = 0.1;
-        this.acceleration = 0.02;
+        this.forwardSpeed = 0;
+        this.maxSpeed = 2.5;
+        this.accelStep = 0.05;
+        this.drag = 0.98;
+        this.rotationStep = 0.02;
 
         this.setupEventListeners();
     }
@@ -55,35 +57,38 @@ class CameraController {
     }
 
     update() {
-        const forward = new THREE.Vector3();
-        const right = new THREE.Vector3();
-        const up = new THREE.Vector3(0, 1, 0);
+        const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+        euler.setFromQuaternion(this.camera.quaternion);
 
-        this.camera.getWorldDirection(forward);
-        forward.y = 0;
-        forward.normalize();
-        right.crossVectors(forward, up).normalize();
+        // Keyboard-driven view rotation (mouse still works)
+        if (this.keys['w']) euler.x += this.rotationStep;
+        if (this.keys['s']) euler.x -= this.rotationStep;
+        if (this.keys['a']) euler.y += this.rotationStep;
+        if (this.keys['d']) euler.y -= this.rotationStep;
+        if (this.keys['e']) euler.z -= this.rotationStep;
+        if (this.keys['y']) euler.z += this.rotationStep;
 
-        let targetVelocity = new THREE.Vector3();
+        // Prevent flipping over the top/bottom
+        euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
+        this.camera.quaternion.setFromEuler(euler);
 
-        if (this.keys['w']) targetVelocity.add(forward);
-        if (this.keys['s']) targetVelocity.sub(forward);
-        if (this.keys['d']) targetVelocity.add(right);
-        if (this.keys['a']) targetVelocity.sub(right);
-        if (this.keys['e']) targetVelocity.y += 1;
-        if (this.keys['y']) targetVelocity.y -= 1;
+        // Adjust forward speed with I/J (allow backward motion)
+        const accelerating = this.keys['i'];
+        const braking = this.keys['k'];
+        if (accelerating) this.forwardSpeed = Math.min(this.maxSpeed, this.forwardSpeed + this.accelStep);
+        if (braking) this.forwardSpeed = Math.max(-this.maxSpeed, this.forwardSpeed - this.accelStep);
 
-        targetVelocity.normalize().multiplyScalar(this.speed);
-
-        // Apply acceleration
-        this.velocity.lerp(targetVelocity, this.acceleration);
-
-        // Clamp velocity
-        if (this.velocity.length() > this.speed) {
-            this.velocity.normalize().multiplyScalar(this.speed);
+        if (!accelerating && !braking) {
+            this.forwardSpeed *= this.drag;
+            if (Math.abs(this.forwardSpeed) < 1e-4) this.forwardSpeed = 0;
         }
 
-        this.camera.position.add(this.velocity);
+        // Move along the view direction (positive = forward, negative = backward)
+        if (Math.abs(this.forwardSpeed) > 0) {
+            const forward = new THREE.Vector3();
+            this.camera.getWorldDirection(forward);
+            this.camera.position.add(forward.multiplyScalar(this.forwardSpeed));
+        }
     }
 }
 
