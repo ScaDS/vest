@@ -9,9 +9,12 @@ class CameraController {
         this.keys = {};
         this.mouse = { x: 0, y: 0, locked: false };
         this.forwardSpeed = 0;
+        this.strafeSpeed = 0;
+        this.verticalSpeed = 0;
         this.maxSpeed = 2.5;
         this.accelStep = 0.05;
         this.drag = 0.98;
+        this.movementStep = 0.1;
         this.rotationStep = 0.02;
 
         this.setupEventListeners();
@@ -20,9 +23,11 @@ class CameraController {
     setupEventListeners() {
         // Keyboard controls
         document.addEventListener('keydown', (e) => {
-            // Space key stops motion
+            // Space key stops all motion
             if (e.key === ' ') {
                 this.forwardSpeed = 0;
+                this.strafeSpeed = 0;
+                this.verticalSpeed = 0;
             }
             this.keys[e.key.toLowerCase()] = true;
         });
@@ -76,11 +81,20 @@ class CameraController {
         euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
         this.camera.quaternion.setFromEuler(euler);
 
-        // Adjust forward speed with I/J (allow backward motion)
-        const accelerating = this.keys['i'];
-        const braking = this.keys['k'];
-        if (accelerating) this.forwardSpeed = Math.min(this.maxSpeed, this.forwardSpeed + 0.05);
-        if (braking) this.forwardSpeed = Math.max(-this.maxSpeed, this.forwardSpeed - 0.05);
+        // Adjust forward speed with I/K (allow backward motion)
+        this.forwardSpeed = 0;
+        if (this.keys['i']) this.forwardSpeed += this.movementStep;
+        if (this.keys['k']) this.forwardSpeed -= this.movementStep;
+
+        // Adjust strafe speed with J/L (left/right)
+        this.strafeSpeed = 0;
+        if (this.keys['j']) this.strafeSpeed -= this.movementStep;
+        if (this.keys['l']) this.strafeSpeed += this.movementStep;
+
+        // Adjust vertical speed with O/M (up/down)
+        this.verticalSpeed = 0;
+        if (this.keys['o']) this.verticalSpeed += this.movementStep;
+        if (this.keys['m']) this.verticalSpeed -= this.movementStep;
 
         // No drag - speed remains constant unless user actively changes it
 
@@ -89,6 +103,20 @@ class CameraController {
             const forward = new THREE.Vector3();
             this.camera.getWorldDirection(forward);
             this.camera.position.add(forward.multiplyScalar(this.forwardSpeed * deltaTime));
+        }
+
+        // Move left/right (strafe)
+        if (Math.abs(this.strafeSpeed) > 0) {
+            const right = new THREE.Vector3();
+            this.camera.getWorldDirection(right);
+            right.cross(this.camera.up).normalize();
+            this.camera.position.add(right.multiplyScalar(this.strafeSpeed * deltaTime));
+        }
+
+        // Move up/down (vertical)
+        if (Math.abs(this.verticalSpeed) > 0) {
+            const up = new THREE.Vector3(0, 1, 0);
+            this.camera.position.add(up.multiplyScalar(this.verticalSpeed * deltaTime));
         }
     }
 }
