@@ -152,17 +152,6 @@ class ImageViewer {
 
         // Event listeners
         window.addEventListener('resize', () => this.onWindowResize());
-        document.addEventListener('click', (e) => this.onMouseClick(e));
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') this.closeImagePopup();
-        });
-
-        // Close popup on background click
-        document.getElementById('image-popup').addEventListener('click', (e) => {
-            if (e.target.id === 'image-popup' || e.target.classList.contains('close-popup')) {
-                this.closeImagePopup();
-            }
-        });
 
         // Setup side-views
         this.initSideViews();
@@ -409,39 +398,6 @@ class ImageViewer {
 
             this.drawArrow(ctx, posPx, endPx);
         });
-    }
-
-    onMouseClick(event) {
-        // Don't racast if over UI
-        if (event.target.id === 'ui-panel' || event.target.id === 'controls' || event.target.id === 'side-views' ||
-            (event.target.parentElement && (event.target.parentElement.id === 'ui-panel' ||
-            event.target.parentElement.id === 'controls' || event.target.parentElement.id === 'side-views'))) {
-            return;
-        }
-
-        this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-        this.raycaster.setFromCamera(this.mouse, this.camera);
-        const intersects = this.raycaster.intersectObjects(this.imageSprites);
-
-        if (intersects.length > 0) {
-            const object = intersects[0].object;
-            if (object.userData.filename) {
-                this.showImagePopup(object.userData.filename);
-            }
-        }
-    }
-
-    showImagePopup(filename) {
-        const popup = document.getElementById('image-popup');
-        const img = document.getElementById('popup-image');
-        img.src = `/api/image/${filename}`;
-        popup.style.display = 'block';
-    }
-
-    closeImagePopup() {
-        document.getElementById('image-popup').style.display = 'none';
     }
 
     updateUI() {
