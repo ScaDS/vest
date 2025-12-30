@@ -892,7 +892,7 @@ class ImageViewer {
 
             // Points
             const [a, b] = v.axes;
-            const radius = 2 * this.imageSize; // Scale with image size
+            const radius = 2; // Fixed size, independent of image size
             this.points.forEach(p => {
                 // Compute color based on XYZ position
                 const rgb = this.computeColorFromXYZ(p.x, p.y, p.z, this.bounds);
@@ -908,7 +908,7 @@ class ImageViewer {
 
     drawArrow(ctx, startPx, endPx) {
         // Draw line
-        ctx.strokeStyle = '#4a9eff';
+        ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(startPx.x, startPx.y);
@@ -925,7 +925,7 @@ class ImageViewer {
         ctx.lineTo(endPx.x - headLen * Math.cos(angle - Math.PI / 6), endPx.y - headLen * Math.sin(angle - Math.PI / 6));
         ctx.lineTo(endPx.x - headLen * Math.cos(angle + Math.PI / 6), endPx.y - headLen * Math.sin(angle + Math.PI / 6));
         ctx.lineTo(endPx.x, endPx.y);
-        ctx.fillStyle = '#4a9eff';
+        ctx.fillStyle = '#ffffff';
         ctx.fill();
     }
 
@@ -950,9 +950,9 @@ class ImageViewer {
             let aName = v.axes[0];
             let bName = v.axes[1];
             const posPx = this.worldToCanvas(v, camPos[aName], camPos[bName]);
-            ctx.fillStyle = '#ff5e5e';
+            ctx.fillStyle = '#ffffff';
             ctx.beginPath();
-            ctx.arc(posPx.x, posPx.y, 3 * this.imageSize, 0, Math.PI * 2);
+            ctx.arc(posPx.x, posPx.y, 3, 0, Math.PI * 2);
             ctx.fill();
 
             // Camera direction arrow in plane
