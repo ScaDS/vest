@@ -291,6 +291,55 @@
             margin-top: 2px;
         }
 
+        /* Panel Scale Slider */
+        #panel-scale-slider {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 120;
+            width: 150px;
+        }
+
+        #panel-scale-slider input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        #panel-scale-slider input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #4a9eff;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #panel-scale-slider input[type="range"]::-webkit-slider-thumb:hover {
+            background: #6bb3ff;
+        }
+
+        #panel-scale-slider input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #4a9eff;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #panel-scale-slider input[type="range"]::-moz-range-thumb:hover {
+            background: #6bb3ff;
+        }
+
         /* Modal Dialog Styles */
         .modal-overlay {
             display: none;
@@ -594,6 +643,11 @@
         </div>
     </div>
 
+    <!-- Panel Scale Slider -->
+    <div id="panel-scale-slider">
+        <input type="range" id="panel-scale" min="50" max="150" value="100" step="5">
+    </div>
+
     <!-- Save Modal -->
     <div id="save-modal" class="modal-overlay">
         <div class="modal-content">
@@ -636,5 +690,23 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="{{ url_for('static', filename='viewer.js') }}"></script>
+    <script>
+        // Panel scale slider functionality
+        const panelScaleSlider = document.getElementById('panel-scale');
+        const leftPanelsContainer = document.getElementById('left-panels');
+        const sideViewsContainer = document.getElementById('side-views');
+        
+        panelScaleSlider.addEventListener('input', (e) => {
+            const scale = e.target.value / 100;
+            
+            // Scale entire left panels container
+            leftPanelsContainer.style.transform = `scale(${scale})`;
+            leftPanelsContainer.style.transformOrigin = 'top left';
+            
+            // Scale entire right side views container
+            sideViewsContainer.style.transform = `scale(${scale})`;
+            sideViewsContainer.style.transformOrigin = 'top right';
+        });
+    </script>
 </body>
 </html>
