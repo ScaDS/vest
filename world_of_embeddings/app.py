@@ -137,13 +137,15 @@ def run_app(dataframe=None, image_base_path=None, host='127.0.0.1', port=5000, d
         app.image_base_path = str(Path(image_base_path).resolve())
         print(f"Image base path set to: {app.image_base_path}")
     
-    # Open browser
+    # Open browser (only in main process, not in reloader process)
     import webbrowser
     import threading
+    import os
     
-    def open_browser():
-        webbrowser.open(f'http://{host}:{port}')
-    
-    threading.Timer(1.0, open_browser).start()
+    if os.environ.get('WERKZEUG_RUN_MAIN') == 'true' or not debug:
+        def open_browser():
+            webbrowser.open(f'http://{host}:{port}')
+        
+        threading.Timer(1.0, open_browser).start()
     
     app.run(host=host, port=port, debug=debug)

@@ -142,3 +142,5 @@ examples/llava/
 examples/msiu/
 examples/pdfs/images
 examples/pdfs/data.csv
+examples/pdfs2/images
+examples/pdfs2/data.csv
