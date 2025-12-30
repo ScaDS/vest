@@ -139,4 +139,6 @@ examples/imagenet/
 examples/animals/
 examples/lexica_dataset/
 examples/llava/
-
+examples/msiu/
+examples/pdfs/images
+examples/pdfs/data.csv
