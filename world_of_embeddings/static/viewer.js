@@ -690,8 +690,6 @@ class ImageViewer {
     }
 
     updateUI() {
-        document.getElementById('point-count').textContent = this.points.length;
-
         if (this.points.length > 0) {
             const xs = this.points.map(p => p.x);
             const ys = this.points.map(p => p.y);
@@ -778,6 +776,33 @@ class ImageViewer {
                 // Load as image if not already loaded
                 if (!sprite.userData.isImage) {
                     this.loadSpriteAsImage(sprite);
+                } else {
+                    // Update image size dynamically based on current distance and imageSize setting
+                    if (sprite.type === 'Mesh' && sprite.userData.aspect) {
+                        const aspect = sprite.userData.aspect;
+                        const baseHeight = this.imageSize;
+                        const baseWidth = baseHeight * aspect;
+                        
+                        // Distance-based scaling to maintain consistent apparent size
+                        const minDistance = 5.0; // Reference distance
+                        const distanceScale = Math.sqrt(distance / minDistance);
+                        
+                        const finalHeight = baseHeight * distanceScale;
+                        const finalWidth = baseWidth * distanceScale;
+                        
+                        // Update geometry if size has changed significantly
+                        if (sprite.geometry) {
+                            const currentWidth = sprite.geometry.parameters.width;
+                            const currentHeight = sprite.geometry.parameters.height;
+                            const sizeDiff = Math.abs(currentWidth - finalWidth) + Math.abs(currentHeight - finalHeight);
+                            
+                            // Only recreate geometry if size difference is significant (> 1% of target size)
+                            if (sizeDiff > (finalWidth + finalHeight) * 0.01) {
+                                sprite.geometry.dispose();
+                                sprite.geometry = new THREE.PlaneGeometry(finalWidth, finalHeight);
+                            }
+                        }
+                    }
                 }
             } else {
                 // Convert to rectangle if it's currently an image
@@ -849,22 +874,15 @@ class ImageViewer {
                 // Use original texture without downsampling
                 const finalTexture = texture;
                 
-                // Calculate aspect ratio and resize geometry
+                // Calculate and store aspect ratio
                 const aspect = finalTexture.image.width / finalTexture.image.height;
+                sprite.userData.aspect = aspect;
+                
+                // Use base size from imageSize setting (will be scaled dynamically)
                 const baseHeight = this.imageSize;
                 const baseWidth = baseHeight * aspect;
                 
-                // Distance-based scaling: use square root to maintain more consistent size
-                // This compensates for perspective projection
-                const distance = this.camera.position.distanceTo(sprite.position);
-                const minDistance = 5.0; // Reference distance
-                const distanceScale = Math.sqrt(distance / minDistance);
-                
-                // Apply distance scaling to maintain more consistent apparent size
-                let finalHeight = baseHeight * distanceScale;
-                let finalWidth = baseWidth * distanceScale;
-                
-                const newGeometry = new THREE.PlaneGeometry(finalWidth, finalHeight);
+                const newGeometry = new THREE.PlaneGeometry(baseWidth, baseHeight);
                 const imageMaterial = new THREE.MeshBasicMaterial({ 
                     map: finalTexture,
                     transparent: true,
@@ -1130,10 +1148,6 @@ class ImageViewer {
         const pos = this.camera.position;
         document.getElementById('camera-pos').textContent = 
             `${pos.x.toFixed(0)}, ${pos.y.toFixed(0)}, ${pos.z.toFixed(0)}`;
-
-        // Update speed display
-        const speed = this.controller.forwardSpeed;
-        document.getElementById('speed').textContent = speed.toFixed(2);
 
         // Update view angle display
         const euler = new THREE.Euler(0, 0, 0, 'YXZ');
