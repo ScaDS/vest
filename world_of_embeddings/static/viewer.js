@@ -393,7 +393,7 @@ class ImageViewer {
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
         this.bounds = null;
-        this.imageSize = 0.5; // Default image size
+        this.imageSize = 0.25; // Default image size
         this.renderImages = true; // Render images flag
         this.lastTime = performance.now();
 
@@ -1106,8 +1106,8 @@ class ImageViewer {
                 // Normalize distance (0 = closest, 1 = furthest)
                 const normalizedDist = distRange > 0 ? (distance - minDist) / distRange : 0;
                 
-                // Base size in world units
-                const baseSize = 0.3;
+                // Base size in world units - use imageSize for consistency with images
+                const baseSize = this.imageSize;
                 
                 // Distance-based scaling: use logarithmic scale to maintain more consistent size
                 // Scale grows slowly with distance to compensate for perspective shrinking
