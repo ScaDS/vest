@@ -473,6 +473,26 @@ class ImageViewer {
         this.controller.setupArrowButtons();
     }
 
+    computeColorFromXYZ(x, y, z, bounds) {
+        // Normalize coordinates to [0, 1] range based on bounds
+        const xNorm = (x - bounds.x[0]) / (bounds.x[1] - bounds.x[0]);
+        const yNorm = (y - bounds.y[0]) / (bounds.y[1] - bounds.y[0]);
+        const zNorm = (z - bounds.z[0]) / (bounds.z[1] - bounds.z[0]);
+        
+        // Map to RGB: X->Red, Y->Green, Z->Blue
+        // Scale to range [64, 255] to avoid pure black (0) and ensure minimum brightness
+        // This gives us a range from dark grey to full color
+        const minBrightness = 64;
+        const maxBrightness = 255;
+        const colorRange = maxBrightness - minBrightness;
+        
+        const r = Math.floor(minBrightness + xNorm * colorRange);
+        const g = Math.floor(minBrightness + yNorm * colorRange);
+        const b = Math.floor(minBrightness + zNorm * colorRange);
+        
+        return { r, g, b };
+    }
+
     async loadData() {
         try {
             const response = await fetch('/api/data');
@@ -839,8 +859,11 @@ class ImageViewer {
             // Points
             const [a, b] = v.axes;
             const radius = 2 * this.imageSize; // Scale with image size
-            ctx.fillStyle = '#ffffff';
             this.points.forEach(p => {
+                // Compute color based on XYZ position
+                const rgb = this.computeColorFromXYZ(p.x, p.y, p.z, this.bounds);
+                ctx.fillStyle = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+                
                 const px = this.worldToCanvas(v, p[a], p[b]);
                 ctx.beginPath();
                 ctx.arc(px.x, px.y, radius, 0, Math.PI * 2);
@@ -1057,10 +1080,14 @@ class ImageViewer {
                 // Apply distance scaling with slight size variation based on depth
                 let finalSize = baseSize * distanceScale * (1.0 - normalizedDist * 0.3);
                 
-                // Brightness: white (close) to grey (far)
-                // RGB: (255,255,255) to (100,100,100)
-                const brightness = 255 - (normalizedDist * 155);
-                const color = (brightness << 16) | (brightness << 8) | brightness;
+                // Compute color based on XYZ position
+                const rgb = this.computeColorFromXYZ(
+                    sprite.position.x,
+                    sprite.position.y,
+                    sprite.position.z,
+                    this.bounds
+                );
+                const color = (rgb.r << 16) | (rgb.g << 8) | rgb.b;
                 
                 // Opacity: more opaque when closer
                 const opacity = 1.0 - (normalizedDist * 0.4);
