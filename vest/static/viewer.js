@@ -1195,11 +1195,19 @@ class ImageViewer {
                 const aspect = canvas.width / canvas.height;
                 sprite.userData.aspect = aspect;
                 
-                // Use base size from imageSize setting (will be scaled dynamically)
+                // Calculate initial size with distance-based scaling to match render loop logic
+                const distance = this.camera.position.distanceTo(sprite.position);
                 const baseHeight = this.imageSize;
                 const baseWidth = baseHeight * aspect;
                 
-                const newGeometry = new THREE.PlaneGeometry(baseWidth, baseHeight);
+                // Apply distance-based scaling (matching the logic in updateSprites)
+                const minDistance = 5.0; // Reference distance
+                const distanceScale = Math.sqrt(distance / minDistance);
+                
+                const finalHeight = baseHeight * distanceScale;
+                const finalWidth = baseWidth * distanceScale;
+                
+                const newGeometry = new THREE.PlaneGeometry(finalWidth, finalHeight);
                 const imageMaterial = new THREE.MeshBasicMaterial({ 
                     map: framedTexture,
                     transparent: true,
