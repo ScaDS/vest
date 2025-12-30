@@ -1,8 +1,10 @@
 # VEST - Visual Embedding Space Traveling
 
-A browser-based visualization engine for exploring vision embeddings in 3D space. Navigate using your mouse, touchscreen and keyboard, save keypoints along your trajectory and allow others to follow your path.
+Browser-based exploration of vision embeddings in 3D space. Navigate using your mouse, touchscreen and keyboard, save keypoints along your trajectory and allow others to follow your path.
 
 ![teaser](docs/images/vest-teaser.gif)
+
+<small>Visualization uses a subsample of the [MNist dataset](https://huggingface.co/datasets/ylecun/mnist) embedded using [nomic-ai/nomic-embed-vision-v1.5](https://huggingface.co/nomic-ai/nomic-embed-vision-v1.5) reduced to 3 dimensions using [UMAP](https://umap-learn.readthedocs.io/en/latest/). See [this data generation notebook](https://github.com/ScaDS/vest/blob/main/examples/mnist/vision_embeddings_umap.ipynb).</small>
 
 ## Features
 
@@ -134,6 +136,7 @@ MIT License - see LICENSE file for details
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+Note: Most of the code in this repository was vibe-coded using Github copilot integration in Visual Studio Code. When modifying code here, consider using a similar tool.
 
 ## Citation
 

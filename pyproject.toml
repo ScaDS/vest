@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "vest"
 version = "0.1.0"
-description = "A browser-based visualization engine for vision embeddings in 3D space"
+description = "Browser-based exploration of vision embeddings in 3D space."
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
