@@ -1,22 +1,18 @@
 # VEST - Visual Embedding Space Traveling
 
-A 3D browser-based visualization engine for exploring image data in three-dimensional space. Navigate using your mouse and keyboard to explore images placed at x, y, z coordinates.
+A browser-based visualization engine for exploring vision embeddings in 3D space. Navigate using your mouse, touchscreen and keyboard, save keypoints along your trajectory and allow others to follow your path.
+
+![teaser](docs/images/vest-teaser.gif)
 
 ## Features
 
-- **Interactive 3D Visualization**: Explore images in 3D space with smooth camera controls
-- **Browser-Based**: Runs entirely in your web browser using Three.js
+- **Interactive 3D Visualization**: Explore images placed at 3D coordinates
+- **Browser-Based**: Runs entirely in your web browser using [Three.js](http://threejs.org/)
 - **Pip-Installable**: Easy installation as a Python package
-- **Flexible Data Input**: Works with pandas DataFrames or CSV files
-- **Fast Navigation**: Smooth WASD movement and mouse look controls
-- **Image Popup**: Click on any image to view it in full size
+- **Flexible Data Input**: Works with CSV files containing `filename`, `x`, `y` and `z` columns.
+- **Fast Navigation**: Smooth WASD movement, mouse and touchscreen controls
 
 ## Installation
-
-### From PyPI (when published)
-```bash
-pip install vest
-```
 
 ### From source
 ```bash
