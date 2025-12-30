@@ -18,6 +18,18 @@ class CameraController {
         this.movementStep = 0.1;
         this.rotationStep = 0.005;
 
+        // Touch controls
+        this.touch = {
+            active: false,
+            lastX: 0,
+            lastY: 0,
+            isPinching: false,
+            lastDistance: 0,
+            centerX: 0,
+            centerY: 0,
+            isPanning: false
+        };
+
         this.setupEventListeners();
     }
 
@@ -92,6 +104,175 @@ class CameraController {
             
             // Move camera along its forward direction
             this.camera.position.add(forward.multiplyScalar(moveAmount));
+        }, { passive: false });
+
+        // Touch controls
+        this.element.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            
+            if (e.touches.length === 1) {
+                // Single touch - rotation mode
+                this.touch.active = true;
+                this.touch.isPinching = false;
+                this.touch.isPanning = false;
+                this.touch.lastX = e.touches[0].clientX;
+                this.touch.lastY = e.touches[0].clientY;
+            } else if (e.touches.length === 2) {
+                // Two finger touch - pinch zoom mode
+                this.touch.active = false;
+                this.touch.isPinching = true;
+                this.touch.isPanning = false;
+                
+                const dx = e.touches[1].clientX - e.touches[0].clientX;
+                const dy = e.touches[1].clientY - e.touches[0].clientY;
+                this.touch.lastDistance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Calculate center point between two fingers
+                this.touch.centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                this.touch.centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+            } else if (e.touches.length >= 3) {
+                // Three or more fingers - panning mode
+                this.touch.active = false;
+                this.touch.isPinching = false;
+                this.touch.isPanning = true;
+                
+                // Calculate average position of all touches
+                let sumX = 0, sumY = 0;
+                for (let i = 0; i < e.touches.length; i++) {
+                    sumX += e.touches[i].clientX;
+                    sumY += e.touches[i].clientY;
+                }
+                this.touch.lastX = sumX / e.touches.length;
+                this.touch.lastY = sumY / e.touches.length;
+            }
+        }, { passive: false });
+
+        this.element.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            
+            if (e.touches.length === 1 && this.touch.active) {
+                // Single touch - rotate camera
+                const deltaX = e.touches[0].clientX - this.touch.lastX;
+                const deltaY = e.touches[0].clientY - this.touch.lastY;
+                
+                const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+                euler.setFromQuaternion(this.camera.quaternion);
+                euler.y += deltaX * 0.002;
+                euler.x += deltaY * 0.002;
+                
+                // Clamp vertical rotation
+                euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
+                
+                this.camera.quaternion.setFromEuler(euler);
+                
+                this.touch.lastX = e.touches[0].clientX;
+                this.touch.lastY = e.touches[0].clientY;
+            } else if (e.touches.length === 2 && this.touch.isPinching) {
+                // Two finger touch - pinch to zoom
+                const dx = e.touches[1].clientX - e.touches[0].clientX;
+                const dy = e.touches[1].clientY - e.touches[0].clientY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Calculate new center point
+                const newCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                const newCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                
+                // Calculate zoom direction towards the pinch center
+                const zoomDelta = distance - this.touch.lastDistance;
+                
+                // Convert screen space center to normalized device coordinates
+                const ndcX = (newCenterX / window.innerWidth) * 2 - 1;
+                const ndcY = -(newCenterY / window.innerHeight) * 2 + 1;
+                
+                // Create a raycaster from the camera through the pinch center point
+                const raycaster = new THREE.Raycaster();
+                const mouseVector = new THREE.Vector2(ndcX, ndcY);
+                raycaster.setFromCamera(mouseVector, this.camera);
+                
+                // Get the direction from camera to the pinch center
+                const direction = raycaster.ray.direction.clone();
+                
+                // Move camera along this direction
+                const zoomSensitivity = 0.03;
+                const moveAmount = zoomDelta * zoomSensitivity;
+                this.camera.position.add(direction.multiplyScalar(moveAmount));
+                
+                this.touch.lastDistance = distance;
+                this.touch.centerX = newCenterX;
+                this.touch.centerY = newCenterY;
+            } else if (e.touches.length >= 3 && this.touch.isPanning) {
+                // Three or more fingers - pan the view
+                // Calculate average position of all touches
+                let sumX = 0, sumY = 0;
+                for (let i = 0; i < e.touches.length; i++) {
+                    sumX += e.touches[i].clientX;
+                    sumY += e.touches[i].clientY;
+                }
+                const avgX = sumX / e.touches.length;
+                const avgY = sumY / e.touches.length;
+                
+                const deltaX = avgX - this.touch.lastX;
+                const deltaY = avgY - this.touch.lastY;
+                
+                // Get camera right vector for horizontal panning
+                const right = new THREE.Vector3();
+                this.camera.getWorldDirection(right);
+                right.cross(this.camera.up).normalize();
+                
+                // Get world up vector for vertical panning
+                const up = new THREE.Vector3(0, 1, 0);
+                
+                // Pan sensitivity
+                const panSensitivity = 0.02;
+                
+                // Move camera based on touch movement
+                this.camera.position.add(right.multiplyScalar(-deltaX * panSensitivity));
+                this.camera.position.add(up.multiplyScalar(deltaY * panSensitivity));
+                
+                this.touch.lastX = avgX;
+                this.touch.lastY = avgY;
+            }
+        }, { passive: false });
+
+        this.element.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            
+            if (e.touches.length === 0) {
+                this.touch.active = false;
+                this.touch.isPinching = false;
+                this.touch.isPanning = false;
+            } else if (e.touches.length === 1) {
+                // Transition to single touch mode
+                this.touch.active = true;
+                this.touch.isPinching = false;
+                this.touch.isPanning = false;
+                this.touch.lastX = e.touches[0].clientX;
+                this.touch.lastY = e.touches[0].clientY;
+            } else if (e.touches.length === 2) {
+                // Transition to two-finger mode
+                this.touch.active = false;
+                this.touch.isPinching = true;
+                this.touch.isPanning = false;
+                
+                const dx = e.touches[1].clientX - e.touches[0].clientX;
+                const dy = e.touches[1].clientY - e.touches[0].clientY;
+                this.touch.lastDistance = Math.sqrt(dx * dx + dy * dy);
+                this.touch.centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                this.touch.centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+            } else if (e.touches.length >= 3) {
+                // Transition to three-finger mode
+                this.touch.active = false;
+                this.touch.isPinching = false;
+                this.touch.isPanning = true;
+                
+                let sumX = 0, sumY = 0;
+                for (let i = 0; i < e.touches.length; i++) {
+                    sumX += e.touches[i].clientX;
+                    sumY += e.touches[i].clientY;
+                }
+                this.touch.lastX = sumX / e.touches.length;
+                this.touch.lastY = sumY / e.touches.length;
+            }
         }, { passive: false });
     }
 
