@@ -946,9 +946,42 @@ class ImageViewer {
             // Draw static layer first
             if (v.off) ctx.drawImage(v.off, 0, 0);
 
-            // Camera position dot
+            // Draw keyframe path lines if multiple keyframes exist
             let aName = v.axes[0];
             let bName = v.axes[1];
+            if (this.keyframes.length >= 2) {
+                ctx.strokeStyle = '#ff0000';  // Red color
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                // Draw lines connecting consecutive keyframes
+                for (let i = 0; i < this.keyframes.length; i++) {
+                    const keyframe = this.keyframes[i];
+                    const kfPos = keyframe.position;
+                    const kfPx = this.worldToCanvas(v, kfPos[aName], kfPos[bName]);
+                    
+                    if (i === 0) {
+                        ctx.moveTo(kfPx.x, kfPx.y);
+                    } else {
+                        ctx.lineTo(kfPx.x, kfPx.y);
+                    }
+                }
+                ctx.stroke();
+                
+                // Draw small circles at keyframe positions
+                ctx.fillStyle = '#ff0000';
+                for (let i = 0; i < this.keyframes.length; i++) {
+                    const keyframe = this.keyframes[i];
+                    const kfPos = keyframe.position;
+                    const kfPx = this.worldToCanvas(v, kfPos[aName], kfPos[bName]);
+                    
+                    ctx.beginPath();
+                    ctx.arc(kfPx.x, kfPx.y, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // Camera position dot
             const posPx = this.worldToCanvas(v, camPos[aName], camPos[bName]);
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
