@@ -53,10 +53,11 @@ Your data must have the following columns:
 - **E** - Move up
 - **Y** - Move down
 - **Mouse** - Look around (click to enable pointer lock)
+- **Touch control**
+  * 1 finger: Rotate view
+  * 2 fingers: Zoom
+  * 3 fingers: Pan view
 
-### Interaction
-- **Click Image** - View full-size image in popup
-- **Esc** - Close image popup
 
 ## Advanced Usage
 
