@@ -1366,14 +1366,14 @@ class ImageViewer {
         
         if (this.isPlayingKeyframes) {
             this.stopPlayingKeyframes();
-            playBtn.textContent = 'Play';
+            playBtn.textContent = '▶️';
         } else {
             if (this.keyframes.length < 2) {
                 alert('Please add at least 2 keyframes to play animation');
                 return;
             }
             this.startPlayingKeyframes();
-            playBtn.textContent = 'Stop';
+            playBtn.textContent = '⏸️';
         }
     }
 
