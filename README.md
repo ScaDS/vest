@@ -1,4 +1,4 @@
-# VEST - Visual Embedding Space Traveling
+# VEST - Vision Embedding Space Traveling
 
 Browser-based exploration of vision embeddings in 3D space. Navigate using your mouse, touchscreen and keyboard, save keypoints along your trajectory and allow others to follow your path.
 
