@@ -474,21 +474,58 @@ class ImageViewer {
     }
 
     computeColorFromXYZ(x, y, z, bounds) {
-        // Normalize coordinates to [0, 1] range based on bounds
-        const xNorm = (x - bounds.x[0]) / (bounds.x[1] - bounds.x[0]);
-        const yNorm = (y - bounds.y[0]) / (bounds.y[1] - bounds.y[0]);
-        const zNorm = (z - bounds.z[0]) / (bounds.z[1] - bounds.z[0]);
+        // Normalize coordinates to [-0.5, 0.5] range (centered)
+        const xNorm = (x - bounds.x[0]) / (bounds.x[1] - bounds.x[0]) - 0.5;
+        const yNorm = (y - bounds.y[0]) / (bounds.y[1] - bounds.y[0]) - 0.5;
+        const zNorm = (z - bounds.z[0]) / (bounds.z[1] - bounds.z[0]) - 0.5;
         
-        // Map to RGB: X->Red, Y->Green, Z->Blue
-        // Scale to range [64, 255] to avoid pure black (0) and ensure minimum brightness
-        // This gives us a range from dark grey to full color
-        const minBrightness = 64;
-        const maxBrightness = 255;
-        const colorRange = maxBrightness - minBrightness;
+        // Color scheme for 6 directions:
+        // +X: Red,     -X: Cyan (G+B)
+        // +Y: Green,   -Y: Magenta (R+B)
+        // +Z: Blue,    -Z: Yellow (R+G)
         
-        const r = Math.floor(minBrightness + xNorm * colorRange);
-        const g = Math.floor(minBrightness + yNorm * colorRange);
-        const b = Math.floor(minBrightness + zNorm * colorRange);
+        // Start with base grey to ensure minimum brightness
+        const baseGrey = 80;
+        const colorStrength = 175; // Maximum additional color contribution
+        
+        let r = baseGrey;
+        let g = baseGrey;
+        let b = baseGrey;
+        
+        // X axis contribution
+        if (xNorm > 0) {
+            // Positive X: add Red
+            r += xNorm * 2 * colorStrength;
+        } else {
+            // Negative X: add Cyan (Green + Blue)
+            g += Math.abs(xNorm) * 2 * colorStrength;
+            b += Math.abs(xNorm) * 2 * colorStrength;
+        }
+        
+        // Y axis contribution
+        if (yNorm > 0) {
+            // Positive Y: add Green
+            g += yNorm * 2 * colorStrength;
+        } else {
+            // Negative Y: add Magenta (Red + Blue)
+            r += Math.abs(yNorm) * 2 * colorStrength;
+            b += Math.abs(yNorm) * 2 * colorStrength;
+        }
+        
+        // Z axis contribution
+        if (zNorm > 0) {
+            // Positive Z: add Blue
+            b += zNorm * 2 * colorStrength;
+        } else {
+            // Negative Z: add Yellow (Red + Green)
+            r += Math.abs(zNorm) * 2 * colorStrength;
+            g += Math.abs(zNorm) * 2 * colorStrength;
+        }
+        
+        // Clamp values to [0, 255]
+        r = Math.min(255, Math.max(0, Math.floor(r)));
+        g = Math.min(255, Math.max(0, Math.floor(g)));
+        b = Math.min(255, Math.max(0, Math.floor(b)));
         
         return { r, g, b };
     }
