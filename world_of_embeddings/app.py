@@ -7,6 +7,7 @@ import json
 import pandas as pd
 from flask import Flask, render_template, jsonify, request, send_file
 from pathlib import Path
+import glob
 
 
 def create_app(config_name='development'):
@@ -105,6 +106,104 @@ def create_app(config_name='development'):
                 'z': [float(df['z'].min()), float(df['z'].max())]
             }
         })
+    
+    @app.route('/api/keyframes/list')
+    def list_keyframes():
+        """List all .kf.csv files in the current directory."""
+        try:
+            # Look for .kf.csv files in the current working directory
+            pattern = os.path.join(os.getcwd(), '*.kf.csv')
+            files = glob.glob(pattern)
+            # Get just the filenames, not full paths
+            filenames = [os.path.basename(f) for f in files]
+            return jsonify({'files': sorted(filenames)})
+        except Exception as e:
+            return jsonify({'error': str(e), 'files': []}), 400
+    
+    @app.route('/api/keyframes/save', methods=['POST'])
+    def save_keyframes():
+        """Save keyframes to a .kf.csv file in the current directory."""
+        try:
+            data = request.get_json()
+            filename = data.get('filename', 'keyframes.kf.csv')
+            keyframes = data.get('keyframes', [])
+            
+            # Ensure filename ends with .kf.csv
+            if not filename.endswith('.kf.csv'):
+                filename += '.kf.csv'
+            
+            # Create full path in current working directory
+            file_path = os.path.join(os.getcwd(), filename)
+            
+            # Convert keyframes to DataFrame format
+            # Each keyframe has position {x, y, z} and quaternion {x, y, z, w}
+            rows = []
+            for i, kf in enumerate(keyframes):
+                pos = kf.get('position', {})
+                quat = kf.get('quaternion', {})
+                rows.append({
+                    'keyframe': i,
+                    'pos_x': pos.get('x', 0),
+                    'pos_y': pos.get('y', 0),
+                    'pos_z': pos.get('z', 0),
+                    'quat_x': quat.get('_x', 0),
+                    'quat_y': quat.get('_y', 0),
+                    'quat_z': quat.get('_z', 0),
+                    'quat_w': quat.get('_w', 1)
+                })
+            
+            df = pd.DataFrame(rows)
+            df.to_csv(file_path, index=False)
+            
+            return jsonify({
+                'status': 'success',
+                'message': f'Saved {len(keyframes)} keyframes to {filename}',
+                'path': file_path
+            })
+        except Exception as e:
+            return jsonify({'error': str(e)}), 400
+    
+    @app.route('/api/keyframes/load')
+    def load_keyframes():
+        """Load keyframes from a .kf.csv file in the current directory."""
+        try:
+            filename = request.args.get('filename', '')
+            if not filename:
+                return jsonify({'error': 'No filename provided'}), 400
+            
+            # Create full path in current working directory
+            file_path = os.path.join(os.getcwd(), filename)
+            
+            if not os.path.exists(file_path):
+                return jsonify({'error': f'File not found: {filename}'}), 404
+            
+            # Read CSV file
+            df = pd.read_csv(file_path)
+            
+            # Convert DataFrame back to keyframes format
+            keyframes = []
+            for _, row in df.iterrows():
+                keyframes.append({
+                    'position': {
+                        'x': float(row['pos_x']),
+                        'y': float(row['pos_y']),
+                        'z': float(row['pos_z'])
+                    },
+                    'quaternion': {
+                        '_x': float(row['quat_x']),
+                        '_y': float(row['quat_y']),
+                        '_z': float(row['quat_z']),
+                        '_w': float(row['quat_w'])
+                    }
+                })
+            
+            return jsonify({
+                'status': 'success',
+                'keyframes': keyframes,
+                'filename': filename
+            })
+        except Exception as e:
+            return jsonify({'error': str(e)}), 400
     
     return app
 

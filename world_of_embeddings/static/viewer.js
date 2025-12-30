@@ -36,12 +36,6 @@ class CameraController {
     setupEventListeners() {
         // Keyboard controls
         document.addEventListener('keydown', (e) => {
-            // Space key stops all motion
-            if (e.key === ' ') {
-                this.forwardSpeed = 0;
-                this.strafeSpeed = 0;
-                this.verticalSpeed = 0;
-            }
             this.keys[e.key.toLowerCase()] = true;
         });
 
@@ -471,6 +465,9 @@ class ImageViewer {
 
         // Setup arrow button controls
         this.controller.setupArrowButtons();
+
+        // Setup global keyboard shortcuts
+        this.initGlobalKeyboardShortcuts();
     }
 
     computeColorFromXYZ(x, y, z, bounds) {
@@ -1288,6 +1285,16 @@ class ImageViewer {
         });
     }
 
+    initGlobalKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            // Space key adds a keyframe
+            if (e.key === ' ' || e.code === 'Space') {
+                e.preventDefault(); // Prevent default scrolling behavior
+                this.addKeyframe();
+            }
+        });
+    }
+
     addKeyframe() {
         // Capture current camera state
         const keyframe = {
@@ -1464,7 +1471,166 @@ class ImageViewer {
     }
 }
 
+// Global variables for modal state
+let selectedSaveFile = null;
+let selectedLoadFile = null;
+let viewerInstance = null;
+
+// Modal control functions
+function closeSaveModal() {
+    document.getElementById('save-modal').classList.remove('active');
+    selectedSaveFile = null;
+}
+
+function closeLoadModal() {
+    document.getElementById('load-modal').classList.remove('active');
+    selectedLoadFile = null;
+}
+
+async function openSaveModal() {
+    const modal = document.getElementById('save-modal');
+    const fileList = document.getElementById('save-file-list');
+    
+    // Fetch existing .kf.csv files
+    try {
+        const response = await fetch('/api/keyframes/list');
+        const data = await response.json();
+        
+        // Populate file list
+        fileList.innerHTML = '';
+        data.files.forEach(filename => {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            item.textContent = filename;
+            item.onclick = () => {
+                document.querySelectorAll('#save-file-list .file-item').forEach(el => 
+                    el.classList.remove('selected'));
+                item.classList.add('selected');
+                selectedSaveFile = filename;
+                // Auto-populate filename input (remove .kf.csv extension)
+                const baseName = filename.replace('.kf.csv', '');
+                document.getElementById('save-filename').value = baseName;
+            };
+            fileList.appendChild(item);
+        });
+    } catch (error) {
+        console.error('Error loading file list:', error);
+    }
+    
+    modal.classList.add('active');
+}
+
+async function openLoadModal() {
+    const modal = document.getElementById('load-modal');
+    const fileList = document.getElementById('load-file-list');
+    
+    // Fetch existing .kf.csv files
+    try {
+        const response = await fetch('/api/keyframes/list');
+        const data = await response.json();
+        
+        // Populate file list
+        fileList.innerHTML = '';
+        data.files.forEach(filename => {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            item.textContent = filename;
+            item.onclick = () => {
+                document.querySelectorAll('#load-file-list .file-item').forEach(el => 
+                    el.classList.remove('selected'));
+                item.classList.add('selected');
+                selectedLoadFile = filename;
+            };
+            fileList.appendChild(item);
+        });
+    } catch (error) {
+        console.error('Error loading file list:', error);
+    }
+    
+    modal.classList.add('active');
+}
+
+async function confirmSave() {
+    const filenameInput = document.getElementById('save-filename');
+    let filename = filenameInput.value.trim();
+    
+    if (!filename) {
+        alert('Please enter a filename');
+        return;
+    }
+    
+    // Add .kf.csv extension if not present
+    if (!filename.endsWith('.kf.csv')) {
+        filename += '.kf.csv';
+    }
+    
+    // Get keyframes from viewer instance
+    if (!viewerInstance || !viewerInstance.keyframes || viewerInstance.keyframes.length === 0) {
+        alert('No keyframes to save');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/keyframes/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                filename: filename,
+                keyframes: viewerInstance.keyframes
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            closeSaveModal();
+        } else {
+            alert(`Error saving keyframes: ${result.error}`);
+        }
+    } catch (error) {
+        console.error('Error saving keyframes:', error);
+        alert('Error saving keyframes: ' + error.message);
+    }
+}
+
+async function confirmLoad() {
+    if (!selectedLoadFile) {
+        alert('Please select a file to load');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/keyframes/load?filename=${encodeURIComponent(selectedLoadFile)}`);
+        const result = await response.json();
+        
+        if (response.ok) {
+            // Load keyframes into viewer instance
+            if (viewerInstance) {
+                // Convert plain objects to Three.js objects
+                viewerInstance.keyframes = result.keyframes.map(kf => ({
+                    position: new THREE.Vector3(kf.position.x, kf.position.y, kf.position.z),
+                    quaternion: new THREE.Quaternion(kf.quaternion._x, kf.quaternion._y, kf.quaternion._z, kf.quaternion._w),
+                    timestamp: kf.timestamp || Date.now()
+                }));
+                viewerInstance.updateKeyframesList();
+            }
+            closeLoadModal();
+        } else {
+            alert(`Error loading keyframes: ${result.error}`);
+        }
+    } catch (error) {
+        console.error('Error loading keyframes:', error);
+        alert('Error loading keyframes: ' + error.message);
+    }
+}
+
 // Initialize viewer when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    new ImageViewer();
+    viewerInstance = new ImageViewer();
+    
+    // Add event listeners for Save and Load buttons
+    document.getElementById('save-keyframes-btn').addEventListener('click', openSaveModal);
+    document.getElementById('load-keyframes-btn').addEventListener('click', openLoadModal);
 });
