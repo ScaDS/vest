@@ -1,4 +1,4 @@
-# World of Embeddings - Project Configuration
+# VEST - Visual Embedding Space Traveling - Project Configuration
 
 ## Development Environment
 
@@ -15,8 +15,8 @@
 ## Project Structure
 
 ```
-world_of_embeddings/
-├── world_of_embeddings/          # Main package
+vest/
+├── vest/                        # Main package
 │   ├── __init__.py               # Package initialization
 │   ├── app.py                    # Flask application
 │   ├── cli.py                    # Command-line interface
@@ -36,7 +36,7 @@ world_of_embeddings/
 
 ```bash
 # Clone or navigate to project directory
-cd world_of_embeddings
+cd vest
 
 # Install in editable mode with dev dependencies
 pip install -e ".[dev]"
@@ -101,7 +101,7 @@ Validate and load from pandas DataFrame.
 
 ### Port Already in Use
 ```bash
-world-of-embeddings data.csv --port 8080
+vest data.csv --port 8080
 ```
 
 ### Images Not Loading

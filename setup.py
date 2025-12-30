@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Setup script for world_of_embeddings package.
+Setup script for vest package.
 """
 
 from setuptools import setup, find_packages
@@ -11,17 +11,17 @@ readme_file = Path(__file__).parent / "README.md"
 long_description = readme_file.read_text(encoding="utf-8") if readme_file.exists() else ""
 
 setup(
-    name="world-of-embeddings",
+    name="vest",
     version="0.1.0",
     author="Your Name",
     author_email="your.email@example.com",
     description="A 3D browser-based visualization engine for image data in 3D space",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/world-of-embeddings",
+    url="https://github.com/scads/vest",
     packages=find_packages(),
     package_data={
-        "world_of_embeddings": [
+        "vest": [
             "templates/*",
             "static/*",
             "data/*"
@@ -55,7 +55,7 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "world-of-embeddings=world_of_embeddings.cli:main",
+            "vest=vest.cli:main",
         ]
     },
 )

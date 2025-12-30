@@ -1,10 +1,10 @@
 """
-Tests for world_of_embeddings
+Tests for vest
 """
 
 import unittest
 import pandas as pd
-from world_of_embeddings.data_loader import DataLoader
+from vest.data_loader import DataLoader
 
 
 class TestDataLoader(unittest.TestCase):
