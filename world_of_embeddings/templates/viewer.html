@@ -291,6 +291,69 @@
             font-size: 11px;
             padding: 15px 0;
         }
+
+        /* Arrow Button Controls */
+        .arrow-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .arrow-btn {
+            background: rgba(74, 158, 255, 0.2);
+            border: 2px solid rgba(74, 158, 255, 0.5);
+            color: #4a9eff;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            font-weight: bold;
+        }
+
+        .arrow-btn:hover {
+            background: rgba(74, 158, 255, 0.3);
+            border-color: #4a9eff;
+        }
+
+        .arrow-btn:active {
+            background: rgba(74, 158, 255, 0.5);
+            transform: scale(0.95);
+        }
+
+        .arrow-btn:nth-child(1) {
+            grid-column: 2;
+        }
+
+        .arrow-btn:nth-child(2) {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        .arrow-btn:nth-child(3) {
+            grid-column: 2;
+            grid-row: 3;
+        }
+
+        .arrow-btn:nth-child(4) {
+            grid-column: 3;
+            grid-row: 2;
+        }
+
+        .arrow-btn:nth-child(5) {
+            grid-column: 1;
+            grid-row: 1;
+        }
+
+        .arrow-btn:nth-child(6) {
+            grid-column: 3;
+            grid-row: 3;
+        }
     </style>
 </head>
 <body>
@@ -347,10 +410,13 @@
 
         <div id="controls" class="left-panel">
             <h3>Controls</h3>
-            <div class="control-section">
-                <div><span class="control-key">W/A/S/D/E/Y</span> - Rotate view (pitch/yaw/roll)</div>
-                <div><span class="control-key">I/J/K/L/O/M</span> - Move view (forward/back/left/right/up/down)</div>
-                <div><span class="control-key">Mouse</span> - Look Around</div>
+            <div class="arrow-buttons">
+                <button class="arrow-btn" id="btn-up" title="Up (E)">↑</button>
+                <button class="arrow-btn" id="btn-left" title="Left (A)">←</button>
+                <button class="arrow-btn" id="btn-down" title="Down (Y)">↓</button>
+                <button class="arrow-btn" id="btn-right" title="Right (D)">→</button>
+                <button class="arrow-btn" id="btn-forward" title="Forward (W)">↖</button>
+                <button class="arrow-btn" id="btn-back" title="Backward (S)">↘</button>
             </div>
         </div>
     </div>

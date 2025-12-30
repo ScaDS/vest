@@ -276,6 +276,54 @@ class CameraController {
         }, { passive: false });
     }
 
+    setupArrowButtons() {
+        const buttonMappings = {
+            'btn-forward': 'w',
+            'btn-back': 's',
+            'btn-left': 'a',
+            'btn-right': 'd',
+            'btn-up': 'e',
+            'btn-down': 'y'
+        };
+
+        Object.keys(buttonMappings).forEach(btnId => {
+            const button = document.getElementById(btnId);
+            if (!button) return;
+            
+            const key = buttonMappings[btnId];
+            
+            // Mouse events
+            button.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                this.keys[key] = true;
+            });
+            
+            button.addEventListener('mouseup', (e) => {
+                e.preventDefault();
+                this.keys[key] = false;
+            });
+            
+            button.addEventListener('mouseleave', (e) => {
+                this.keys[key] = false;
+            });
+            
+            // Touch events for mobile
+            button.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                this.keys[key] = true;
+            });
+            
+            button.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                this.keys[key] = false;
+            });
+            
+            button.addEventListener('touchcancel', (e) => {
+                this.keys[key] = false;
+            });
+        });
+    }
+
     update(deltaTime = 1) {
         const euler = new THREE.Euler(0, 0, 0, 'YXZ');
         euler.setFromQuaternion(this.camera.quaternion);
@@ -420,6 +468,9 @@ class ImageViewer {
 
         // Setup keyframe controls
         this.initKeyframeControls();
+
+        // Setup arrow button controls
+        this.controller.setupArrowButtons();
     }
 
     async loadData() {
