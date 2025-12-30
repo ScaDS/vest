@@ -1164,11 +1164,35 @@ class ImageViewer {
         textureLoader.load(
             imageUrl,
             (texture) => {
-                // Use original texture without downsampling
-                const finalTexture = texture;
+                // Compute the color this point would have based on its position
+                const pos = sprite.position;
+                const rgb = this.computeColorFromXYZ(pos.x, pos.y, pos.z, this.bounds);
+                const frameColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
                 
-                // Calculate and store aspect ratio
-                const aspect = finalTexture.image.width / finalTexture.image.height;
+                // Create a canvas to draw the image with a colored frame
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                const img = texture.image;
+                const frameWidth = Math.max(3, Math.floor(img.width * 0.01)); // 1% of image width, minimum 3px
+                
+                // Set canvas size to accommodate image plus frame
+                canvas.width = img.width + frameWidth * 2;
+                canvas.height = img.height + frameWidth * 2;
+                
+                // Draw the colored frame (border)
+                ctx.fillStyle = frameColor;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw the original image on top, leaving the frame visible
+                ctx.drawImage(img, frameWidth, frameWidth, img.width, img.height);
+                
+                // Create a new texture from the canvas
+                const framedTexture = new THREE.CanvasTexture(canvas);
+                framedTexture.needsUpdate = true;
+                
+                // Calculate and store aspect ratio (based on canvas, not original image)
+                const aspect = canvas.width / canvas.height;
                 sprite.userData.aspect = aspect;
                 
                 // Use base size from imageSize setting (will be scaled dynamically)
@@ -1177,7 +1201,7 @@ class ImageViewer {
                 
                 const newGeometry = new THREE.PlaneGeometry(baseWidth, baseHeight);
                 const imageMaterial = new THREE.MeshBasicMaterial({ 
-                    map: finalTexture,
+                    map: framedTexture,
                     transparent: true,
                     side: THREE.DoubleSide
                 });
@@ -1192,7 +1216,7 @@ class ImageViewer {
                     const mesh = new THREE.Mesh(newGeometry, imageMaterial);
                     mesh.position.copy(sprite.position);
                     mesh.userData = sprite.userData;
-                    mesh.userData.texture = finalTexture;
+                    mesh.userData.texture = framedTexture;
                     
                     // Replace in array
                     const index = this.imageSprites.indexOf(sprite);
@@ -1207,8 +1231,11 @@ class ImageViewer {
                     
                     sprite.geometry = newGeometry;
                     sprite.material = imageMaterial;
-                    sprite.userData.texture = finalTexture;
+                    sprite.userData.texture = framedTexture;
                 }
+                
+                // Clean up original texture
+                texture.dispose();
             },
             undefined,
             (error) => {
