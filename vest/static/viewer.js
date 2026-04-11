@@ -1461,37 +1461,49 @@ class ImageViewer {
             return;
         }
 
-        // Calculate total animation duration (2 seconds per segment by default)
-        const segmentDuration = 2000 / this.keyframeSpeed; // milliseconds
-        const totalDuration = segmentDuration * (this.keyframes.length - 1);
+        // Animation phases: pause at each keyframe for 2 seconds, then transition to next
+        const pauseDuration = 750; // milliseconds to pause at each keyframe
+        const transitionDuration = 2000 / this.keyframeSpeed; // milliseconds to transition between keyframes
+        const phaseDuration = pauseDuration + transitionDuration;
+        const totalDuration = phaseDuration * this.keyframes.length;
         
         // Update progress
         const elapsed = performance.now() - this.keyframeStartTime;
-        this.keyframeProgress = (elapsed % totalDuration) / totalDuration;
+        const cycleTime = elapsed % totalDuration;
         
-        // Find which segment we're in
-        const segmentProgress = this.keyframeProgress * (this.keyframes.length - 1);
-        const segmentIndex = Math.floor(segmentProgress);
-        const localProgress = segmentProgress - segmentIndex;
+        // Determine which keyframe we're at/transitioning from
+        const phaseIndex = Math.floor(cycleTime / phaseDuration);
+        const phaseProgress = (cycleTime % phaseDuration);
         
-        // Get start and end keyframes for current segment
-        const startKeyframe = this.keyframes[segmentIndex];
-        const endKeyframe = this.keyframes[segmentIndex + 1] || this.keyframes[0];
+        const currentKeyframeIndex = phaseIndex % this.keyframes.length;
+        const nextKeyframeIndex = (phaseIndex + 1) % this.keyframes.length;
         
-        // Interpolate position
-        this.camera.position.lerpVectors(
-            startKeyframe.position,
-            endKeyframe.position,
-            this.smoothstep(localProgress)
-        );
+        const currentKeyframe = this.keyframes[currentKeyframeIndex];
+        const nextKeyframe = this.keyframes[nextKeyframeIndex];
         
-        // Interpolate rotation (quaternion)
-        THREE.Quaternion.slerp(
-            startKeyframe.quaternion,
-            endKeyframe.quaternion,
-            this.camera.quaternion,
-            this.smoothstep(localProgress)
-        );
+        if (phaseProgress < pauseDuration) {
+            // Pausing phase: stay at current keyframe
+            this.camera.position.copy(currentKeyframe.position);
+            this.camera.quaternion.copy(currentKeyframe.quaternion);
+        } else {
+            // Transition phase: interpolate to next keyframe
+            const transitionProgress = (phaseProgress - pauseDuration) / transitionDuration;
+            
+            // Interpolate position
+            this.camera.position.lerpVectors(
+                currentKeyframe.position,
+                nextKeyframe.position,
+                this.smoothstep(transitionProgress)
+            );
+            
+            // Interpolate rotation (quaternion)
+            THREE.Quaternion.slerp(
+                currentKeyframe.quaternion,
+                nextKeyframe.quaternion,
+                this.camera.quaternion,
+                this.smoothstep(transitionProgress)
+            );
+        }
     }
 
     // Smooth interpolation function (ease in-out)

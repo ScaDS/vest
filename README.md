@@ -95,7 +95,7 @@ If you use VEST (Visual Embedding Space Traveling) in your research, please cite
 @software{vest,
   title={VEST: Visual Embedding Space Traveling - 3D Browser-Based Visualization for Image Data},
   author={Robert Haase},
-  year={2025},
+  year={2026},
   url={https://github.com/scads/vest}
 }
 ```
