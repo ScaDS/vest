@@ -2,9 +2,9 @@
 
 Browser-based exploration of vision embeddings in 3D space. Navigate using your mouse, touchscreen and keyboard, save keypoints along your trajectory and allow others to follow your path.
 
-![teaser](docs/images/vest-teaser.gif)
+![teaser](docs/images/vest-teaser-chammi-75.gif)
 
-<small>Visualization uses a subsample of the [MNist dataset](https://huggingface.co/datasets/ylecun/mnist) embedded using [nomic-ai/nomic-embed-vision-v1.5](https://huggingface.co/nomic-ai/nomic-embed-vision-v1.5) reduced to 3 dimensions using [UMAP](https://umap-learn.readthedocs.io/en/latest/). See [this data generation notebook](https://github.com/ScaDS/vest/blob/main/examples/mnist/vision_embeddings_umap.ipynb).</small>
+This example was generated using the [CHAMMI-75](https://morgridge.org/research/labs/caicedo/chammi-75/) microscopy images dataset, which is licensed [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/deed.en). See how to [download this dataset programmatically](examples/chammi-75/download1000.ipynb) and [generate vest-compatible embeddings / data files](examples/chammi-75/vision_embeddings_umap.ipynb).
 
 ## Features
 
@@ -35,6 +35,11 @@ Run `vest` like this:
 vest data.csv --image-path ./images
 ```
 
+![teaser](docs/images/vest-teaser.gif)
+
+<small>Visualization uses a subsample of the [MNist dataset](https://huggingface.co/datasets/ylecun/mnist) embedded using [nomic-ai/nomic-embed-vision-v1.5](https://huggingface.co/nomic-ai/nomic-embed-vision-v1.5) reduced to 3 dimensions using [UMAP](https://umap-learn.readthedocs.io/en/latest/). See [this data generation notebook](https://github.com/ScaDS/vest/blob/main/examples/mnist/vision_embeddings_umap.ipynb).</small>
+
+
 ## Data Format
 
 Your data must have the following columns:
@@ -58,81 +63,24 @@ Your data must have the following columns:
   * 2 fingers: Zoom
   * 3 fingers: Pan view
 
-
-## Advanced Usage
-
-### Jupyter Notebook Integration
-
-```python
-import pandas as pd
-from vest.app import create_app
-from vest.data_loader import DataLoader
-
-# Load data
-df, image_path = DataLoader.load_csv('embeddings.csv')
-
-# Create app with data
-app = create_app()
-app.data_df = df
-app.image_base_path = image_path
-
-# Run in background (optional)
-# app.run(debug=False)
-```
-
-
-## Advanced Configuration
-
-### Server Options
-```bash
-vest data.csv \
-    --host 0.0.0.0 \
-    --port 8080 \
-    --no-debug
-```
-
-## Architecture
-
-```
-vest/
-├── app.py              # Flask application
-├── cli.py              # Command-line interface
-├── data_loader.py      # Data validation and loading
-├── __init__.py         # Package initialization
-├── templates/
-│   └── viewer.html     # Main 3D viewer HTML
-└── static/
-    └── viewer.js       # Three.js-based viewer logic
-```
-
 ## Troubleshooting
 
 ### Images not loading
-- Check that `image_base_path` points to the correct directory
+- Check that `image-path` points to the correct directory
 - Ensure image filenames match exactly (case-sensitive on Linux/Mac)
-- Supported formats: PNG, JPG, WebP
+- Supported formats: PNG, JPG
 
 ## Development
 
 ### Setup development environment
 ```bash
-pip install -e ".[dev]"
+pip install -e .
 ```
 
-### Run tests
-```bash
-pytest tests/
-```
-
-### Code formatting
-```bash
-black vest/
-flake8 vest/
-```
 
 ## License
 
-MIT License - see LICENSE file for details
+MIT License - see [LICENSE](LICENSE) file for details
 
 ## Contributing
 

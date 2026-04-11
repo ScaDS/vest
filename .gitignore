@@ -143,3 +143,5 @@ examples/msiu/
 examples/pdfs/images
 examples/pdfs/data.csv
 examples/pdfs3
+examples/chammi-75/images
+examples/chammi-75/data.csv
