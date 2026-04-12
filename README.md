@@ -82,6 +82,9 @@ While navigating through space, you can press the "Add keyframe" button in this 
 
 ![alt text](https://github.com/ScaDS/vest/blob/main/docs/images/keyframes_panel.png?raw=true)
 
+On the right, you see three panels visualizing X-Y, X-Z and Y-Z projections. The small white arrow in there is your current view point and direction. The red line corresponds to the path of keyframes which is currently loaded.
+
+![alt text](https://github.com/ScaDS/vest/blob/main/docs/images/projection_viewpoint.png?raw=true)
 
 
 ## Example Gallery
