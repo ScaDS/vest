@@ -152,3 +152,10 @@ examples/wind-turbine-data/__MACOSX/
 examples/wind-turbine-data/images/
 examples/wind-turbine-data/labels/
 examples/wind-turbine-data/domain_overview.json
+
+examples/plant-leaf/
+examples/zebrafish/
+examples/brain-tumor-mri/
+examples/butterflies/images/
+examples/fruit-vegetables/
+
