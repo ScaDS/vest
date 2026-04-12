@@ -552,9 +552,69 @@ class ImageViewer {
         }
     }
 
+    getRenderableByPointIndex(pointIndex) {
+        if (!Number.isInteger(pointIndex) || pointIndex < 0) {
+            return null;
+        }
+
+        if (pointIndex < this.imageSprites.length) {
+            const candidate = this.imageSprites[pointIndex];
+            if (candidate && candidate.userData && candidate.userData.index === pointIndex) {
+                return candidate;
+            }
+        }
+
+        return this.imageSprites.find(obj => obj?.userData?.index === pointIndex) || null;
+    }
+
+    disposeMaterial(material) {
+        if (!material) return;
+
+        const disposeOne = (mat) => {
+            if (!mat) return;
+            if (mat.map) {
+                mat.map.dispose();
+                mat.map = null;
+            }
+            mat.dispose();
+        };
+
+        if (Array.isArray(material)) {
+            material.forEach(disposeOne);
+            return;
+        }
+
+        disposeOne(material);
+    }
+
+    disposeRenderable(obj, { disposeUserTexture = true } = {}) {
+        if (!obj) return;
+
+        if (disposeUserTexture && obj.userData?.texture) {
+            obj.userData.texture.dispose();
+            delete obj.userData.texture;
+        }
+
+        if (obj.geometry) {
+            obj.geometry.dispose();
+        }
+
+        this.disposeMaterial(obj.material);
+    }
+
+    removeRenderableFromScene(obj, { disposeUserTexture = true } = {}) {
+        if (!obj) return;
+
+        if (obj.parent) {
+            obj.parent.remove(obj);
+        }
+
+        this.disposeRenderable(obj, { disposeUserTexture });
+    }
+
     createScene(stats) {
         // Clear existing sprites
-        this.imageSprites.forEach(sprite => this.scene.remove(sprite));
+        this.imageSprites.forEach(sprite => this.removeRenderableFromScene(sprite));
         this.imageSprites = [];
 
         if (this.points.length === 0) {
@@ -1080,7 +1140,8 @@ class ImageViewer {
         // Get the nearest N closest that are in front
         // If nearestCount is at max (500), show all images
         const closestCount = this.nearestCount >= 500 ? inFrontSprites.length : Math.min(this.nearestCount, inFrontSprites.length);
-        const closest = inFrontSprites.slice(0, closestCount);
+    const closest = inFrontSprites.slice(0, closestCount);
+    const closestSet = new Set(closest.map(item => item.sprite));
         
         // Find min and max distance for normalization (only among sprites in front)
         const maxDist = inFrontSprites.length > 0 ? inFrontSprites[inFrontSprites.length - 1].distance : 0;
@@ -1092,11 +1153,11 @@ class ImageViewer {
             const { sprite, distance, inFront } = item;
             
             // Only show images for sprites that are in front of the camera and if renderImages is enabled
-            const isClosest = inFront && closest.some(c => c.sprite === sprite);
+            const isClosest = inFront && closestSet.has(sprite);
 
             if (isClosest && this.renderImages) {
                 // Load as image if not already loaded
-                if (!sprite.userData.isImage) {
+                if (!sprite.userData.isImage && !sprite.userData.imageLoadPending) {
                     this.loadSpriteAsImage(sprite);
                 } else {
                     // Update image size dynamically based on current distance and imageSize setting
@@ -1128,7 +1189,7 @@ class ImageViewer {
                 }
             } else {
                 // Convert to rectangle if it's currently an image
-                if (sprite.userData.isImage) {
+                if (sprite.userData.isImage || sprite.userData.imageLoadPending) {
                     this.convertSpriteToRectangle(sprite);
                 }
                 
@@ -1188,17 +1249,45 @@ class ImageViewer {
     }
 
     loadSpriteAsImage(sprite) {
+        if (!sprite?.userData) {
+            return;
+        }
+
+        const pointIndex = sprite.userData.index;
         const textureLoader = new THREE.TextureLoader();
         const imageUrl = sprite.userData.imageUrl;
-        
+
+        const loadToken = (sprite.userData.imageLoadToken || 0) + 1;
+        sprite.userData.imageLoadToken = loadToken;
+        sprite.userData.imageLoadPending = true;
         sprite.userData.isImage = true;
         sprite.userData.isSprite = false;
-        
+
+        const isRequestStillValid = () => {
+            const current = this.getRenderableByPointIndex(pointIndex);
+            if (!current?.userData) return false;
+            return (
+                current.userData.imageLoadToken === loadToken &&
+                current.userData.isImage === true
+            );
+        };
+
         textureLoader.load(
             imageUrl,
             (texture) => {
+                if (!isRequestStillValid()) {
+                    texture.dispose();
+                    return;
+                }
+
+                const currentObj = this.getRenderableByPointIndex(pointIndex);
+                if (!currentObj?.userData) {
+                    texture.dispose();
+                    return;
+                }
+
                 // Compute the color this point would have based on its position
-                const pos = sprite.position;
+                const pos = currentObj.position;
                 const rgb = this.computeColorFromXYZ(pos.x, pos.y, pos.z, this.bounds);
                 const frameColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
                 
@@ -1226,10 +1315,10 @@ class ImageViewer {
                 
                 // Calculate and store aspect ratio (based on canvas, not original image)
                 const aspect = canvas.width / canvas.height;
-                sprite.userData.aspect = aspect;
+                currentObj.userData.aspect = aspect;
                 
                 // Calculate initial size with distance-based scaling to match render loop logic
-                const distance = this.camera.position.distanceTo(sprite.position);
+                const distance = this.camera.position.distanceTo(currentObj.position);
                 const baseHeight = this.imageSize;
                 const baseWidth = baseHeight * aspect;
                 
@@ -1248,31 +1337,35 @@ class ImageViewer {
                 });
                 
                 // If it's a sprite, convert to mesh
-                if (sprite.type === 'Sprite') {
+                if (currentObj.type === 'Sprite') {
                     // Remove old sprite from scene
-                    this.scene.remove(sprite);
-                    sprite.material.dispose();
+                    this.removeRenderableFromScene(currentObj, { disposeUserTexture: false });
                     
                     // Create new mesh
                     const mesh = new THREE.Mesh(newGeometry, imageMaterial);
-                    mesh.position.copy(sprite.position);
-                    mesh.userData = sprite.userData;
+                    mesh.position.copy(currentObj.position);
+                    mesh.userData = currentObj.userData;
                     mesh.userData.texture = framedTexture;
+                    mesh.userData.isImage = true;
+                    mesh.userData.isSprite = false;
+                    mesh.userData.imageLoadPending = false;
                     
                     // Replace in array
-                    const index = this.imageSprites.indexOf(sprite);
+                    const index = this.imageSprites.indexOf(currentObj);
                     if (index !== -1) {
                         this.imageSprites[index] = mesh;
                     }
                     this.scene.add(mesh);
                 } else {
                     // Dispose of old material and geometry
-                    sprite.material.dispose();
-                    if (sprite.geometry) sprite.geometry.dispose();
+                    this.disposeRenderable(currentObj, { disposeUserTexture: false });
                     
-                    sprite.geometry = newGeometry;
-                    sprite.material = imageMaterial;
-                    sprite.userData.texture = framedTexture;
+                    currentObj.geometry = newGeometry;
+                    currentObj.material = imageMaterial;
+                    currentObj.userData.texture = framedTexture;
+                    currentObj.userData.isImage = true;
+                    currentObj.userData.isSprite = false;
+                    currentObj.userData.imageLoadPending = false;
                 }
                 
                 // Clean up original texture
@@ -1280,8 +1373,13 @@ class ImageViewer {
             },
             undefined,
             (error) => {
+                const currentObj = this.getRenderableByPointIndex(pointIndex);
+                if (currentObj?.userData && currentObj.userData.imageLoadToken === loadToken) {
+                    currentObj.userData.imageLoadPending = false;
+                    currentObj.userData.isImage = false;
+                    currentObj.userData.isSprite = true;
+                }
                 console.warn(`Failed to load image: ${sprite.userData.filename}`, error);
-                sprite.userData.isImage = false;
             }
         );
     }
@@ -1289,6 +1387,14 @@ class ImageViewer {
 
 
     convertSpriteToRectangle(sprite) {
+        if (!sprite?.userData) {
+            return;
+        }
+
+        // Invalidate any pending async image load for this point
+        sprite.userData.imageLoadToken = (sprite.userData.imageLoadToken || 0) + 1;
+        sprite.userData.imageLoadPending = false;
+
         // Dispose of texture if it exists
         if (sprite.userData.texture) {
             sprite.userData.texture.dispose();
@@ -1298,9 +1404,7 @@ class ImageViewer {
         // If it's a mesh, convert back to sprite
         if (sprite.type === 'Mesh') {
             // Remove old mesh from scene
-            this.scene.remove(sprite);
-            sprite.material.dispose();
-            if (sprite.geometry) sprite.geometry.dispose();
+            this.removeRenderableFromScene(sprite, { disposeUserTexture: false });
             
             // Create new sprite
             const material = new THREE.SpriteMaterial({
@@ -1315,6 +1419,7 @@ class ImageViewer {
             newSprite.userData = sprite.userData;
             newSprite.userData.isImage = false;
             newSprite.userData.isSprite = true;
+            newSprite.userData.imageLoadPending = false;
             
             // Replace in array
             const index = this.imageSprites.indexOf(sprite);
@@ -1324,7 +1429,7 @@ class ImageViewer {
             this.scene.add(newSprite);
         } else {
             // Already a sprite, just update material
-            sprite.material.dispose();
+            this.disposeMaterial(sprite.material);
             sprite.material = new THREE.SpriteMaterial({
                 color: 0xffffff,
                 transparent: true,
@@ -1333,6 +1438,7 @@ class ImageViewer {
             });
             sprite.userData.isImage = false;
             sprite.userData.isSprite = true;
+            sprite.userData.imageLoadPending = false;
         }
     }
 
