@@ -1,4 +1,4 @@
-# Vision Embedding Space Traveling (VEST)
+# Vision Embedding Space Travelling (VEST)
 
 Browser-based exploration of vision embeddings in 3D space. Navigate using your mouse, touchscreen and keyboard, save keypoints along your trajectory and allow others to follow your path.
 
@@ -123,11 +123,11 @@ Note: Most of the code in this repository was vibe-coded using Github copilot in
 
 ## Citation
 
-If you use VEST (Vision Embedding Space Traveling) in your work, please cite:
+If you use VEST (Vision Embedding Space Travelling) in your work, please cite:
 
 ```bibtex
 @software{vest,
-  title={VEST: Vision Embedding Space Traveling - 3D Browser-Based Visualization for Image Data},
+  title={VEST: Vision Embedding Space Travelling - 3D Browser-Based Visualization for Image Data},
   author={Robert Haase},
   year={2026},
   url={https://github.com/scads/vest}
