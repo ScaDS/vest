@@ -1,4 +1,4 @@
-# VEST - Vision Embedding Space Traveling
+# Vision Embedding Space Traveling (VEST)
 
 Browser-based exploration of vision embeddings in 3D space. Navigate using your mouse, touchscreen and keyboard, save keypoints along your trajectory and allow others to follow your path.
 
@@ -11,38 +11,44 @@ This example was generated using the [CHAMMI-75](https://morgridge.org/research/
 - **Interactive 3D Visualization**: Explore images placed at 3D coordinates
 - **Browser-Based**: Runs entirely in your web browser using [Three.js](http://threejs.org/)
 - **Pip-Installable**: Easy installation as a Python package
-- **Flexible Data Input**: Works with CSV files containing `filename`, `x`, `y` and `z` columns.
-- **Fast Navigation**: Smooth WASD movement, mouse and touchscreen controls
+- **Flexible Data Input**: Works with CSV files containing `filename`, `x`, `y` and `z` columns and folders of .png or .jpg files.
+- **Fast Navigation**: Smooth keyboard movement, mouse and touchscreen controls
 
 ## Installation
 
-### From source
+Installation of VEST is commonly done like this:
+
+```
+pip install vision-embedding-space-travelling
+```
+
+Or the development version:
+
 ```bash
 git clone https://github.com/scads/vest.git
 cd vest
 pip install -e .
 ```
 
+While VEST uses minimal dependencies only ([pandas](https://pandas.pydata.org/) and [Flask](https://flask.palletsprojects.com/en/stable/)), you may need to install additional requirements such as [pytorch](https://pytorch.org/get-started/locally/), [transformers](https://github.com/huggingface/transformers), [umap-learn](https://pypi.org/project/umap-learn/), [kagglehub](https://github.com/Kaggle/kagglehub) depending on which example notebook you use. For more details, check the instructions in the example directories and the 'environmnent.yml' files.
+
 ## Quick Start
 
-Navigate to a folder containing a `data.csv` file and an `images` subfolder with content as explaned below. E.g.:
+Navigate to a folder containing a VEST-compatible `data.csv` file and an `images` subfolder with content as explaned below. E.g.:
 ```bash
 cd examples/mnist
 ```
 
-Run `vest` like this:
+Run VEST like this:
 ```bash
 vest data.csv --image-path ./images
 ```
 
-![teaser](docs/images/vest-teaser.gif)
-
-<small>Visualization uses a subsample of the [MNist dataset](https://huggingface.co/datasets/ylecun/mnist) embedded using [nomic-ai/nomic-embed-vision-v1.5](https://huggingface.co/nomic-ai/nomic-embed-vision-v1.5) reduced to 3 dimensions using [UMAP](https://umap-learn.readthedocs.io/en/latest/). See [this data generation notebook](https://github.com/ScaDS/vest/blob/main/examples/mnist/vision_embeddings_umap.ipynb).</small>
-
+The `images` folder may contain sub-folders, as long as these are secified in the `filename` column of the CSV file. 
 
 ## Data Format
 
-Your data must have the following columns:
+To use VEST with your own data, you need a .csv file with image locations and coordinates in these following columns:
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -50,6 +56,14 @@ Your data must have the following columns:
 | `y` | float | Y coordinate in 3D space |
 | `z` | float | Z coordinate in 3D space |
 | `filename` | string | Relative path to image file (.png, .jpg, etc.) |
+
+Example:
+```
+filename, x, y, z
+test\Image_420.jpg, 11.708443, 5.975971, 1.1601356
+train\Image_420.jpg, 14.487134, 3.430255, -2.0715249
+test\Image_2562.jpg, 12.263655, 5.8971086, -0.066879705
+```
 
 ## Controls
 
@@ -63,20 +77,19 @@ Your data must have the following columns:
   * 2 fingers: Zoom
   * 3 fingers: Pan view
 
+## Use cases
+
+![teaser](docs/images/vest-teaser.gif)
+
+<small>Visualization uses a subsample of the [MNist dataset](https://huggingface.co/datasets/ylecun/mnist) embedded using [nomic-ai/nomic-embed-vision-v1.5](https://huggingface.co/nomic-ai/nomic-embed-vision-v1.5) reduced to 3 dimensions using [UMAP](https://umap-learn.readthedocs.io/en/latest/). See [this data generation notebook](https://github.com/ScaDS/vest/blob/main/examples/mnist/vision_embeddings_umap.ipynb).</small>
+
+
 ## Troubleshooting
 
 ### Images not loading
 - Check that `image-path` points to the correct directory
 - Ensure image filenames match exactly (case-sensitive on Linux/Mac)
 - Supported formats: PNG, JPG
-
-## Development
-
-### Setup development environment
-```bash
-pip install -e .
-```
-
 
 ## License
 
@@ -99,3 +112,7 @@ If you use VEST (Visual Embedding Space Traveling) in your research, please cite
   url={https://github.com/scads/vest}
 }
 ```
+
+## Acknowledgements 
+
+Big thanks goes to Lea Kabjesz and Lea Gihlein for inspiration and code snippets in the example notebooks for creating embeddings. We acknowledge the financial support by the Federal Ministry of Education and Research of Germany and by Sächsische Staatsministerium für Wissenschaft, Kultur und Tourismus in the programme Center of Excellence for AI-research “Center for Scalable Data Analytics and Artificial Intelligence Dresden/Leipzig”, project identification number: ScaDS.AI
