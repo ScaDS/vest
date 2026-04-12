@@ -2,7 +2,7 @@
 
 Browser-based exploration of vision embeddings in 3D space. Navigate using your mouse, touchscreen and keyboard, save keypoints along your trajectory and allow others to follow your path.
 
-![teaser](https://github.com/ScaDS/vest/raw/main/docs/images/docs/images/vest-butterflies-small.gif)
+![teaser](https://github.com/ScaDS/vest/blob/main/docs/images/vest-butterflies-small.gif?raw=true)
 
 This video shows a VEST through [butterfly images](https://www.kaggle.com/datasets/phucthaiv02/butterfly-image-classification) published on kaggle by DePie. The embedding was generated using [openai/clip-vit-base-patch32](https://huggingface.co/openai/clip-vit-base-patch32) and reduced to 3 dimensions using a [UMAP](https://pypi.org/project/umap-learn/). [Full example](https://github.com/ScaDS/vest/tree/main/examples/butterflies)
 
@@ -82,7 +82,7 @@ test\Image_2562.jpg, 12.263655, 5.8971086, -0.066879705
 
 ### CHAMMI-75 Microscopy Images
 
-![teaser](https://github.com/ScaDS/vest/raw/main/docs/images/docs/images/vest-chammi-75.gif)
+![teaser](https://github.com/ScaDS/vest/blob/main/docs/images/vest-chammi-75.gif?raw=true)
 
 This example was generated using the [CHAMMI-75](https://morgridge.org/research/labs/caicedo/chammi-75/) microscopy images dataset, which is licensed [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/deed.en). See how to [download this dataset programmatically](examples/chammi-75/download1000.ipynb) and [generate vest-compatible embeddings / data files](examples/chammi-75/vision_embeddings_umap.ipynb).
 
@@ -90,7 +90,7 @@ This example was generated using the [CHAMMI-75](https://morgridge.org/research/
 
 ### Satellite Images of wind turbines (and without)
 
-![](https://github.com/ScaDS/vest/raw/main/docs/images/docs/images/vest-wind-turbines.gif)
+![](https://github.com/ScaDS/vest/blob/main/docs/images/vest-wind-turbines.gif?raw=true)
 
 This video shows VEST through [Overhead Wind Turbine Dataset (NAIP)](https://doi.org/10.5281/zenodo.7385226) which is licensed [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/legalcode) by Komfein C. et al. It contains satellite images from the US National Agricultural Imagery Program showing wind turbines and without wind turbines. The embedding was generated using [openai/clip-vit-base-patch32](https://huggingface.co/openai/clip-vit-base-patch32) and reduced to 3 dimensions using a [UMAP](https://pypi.org/project/umap-learn/).
 
@@ -98,7 +98,7 @@ This video shows VEST through [Overhead Wind Turbine Dataset (NAIP)](https://doi
 
 ### MNist Image of Numbers
 
-![teaser](https://github.com/ScaDS/vest/raw/main/docs/images/docs/images/vest-mnist.gif)
+![teaser](https://github.com/ScaDS/vest/blob/main/docs/images/vest-mnist.gif?raw=true)
 
 This visualization uses a subsample of the [MNist dataset](https://huggingface.co/datasets/ylecun/mnist) embedded using [nomic-ai/nomic-embed-vision-v1.5](https://huggingface.co/nomic-ai/nomic-embed-vision-v1.5) reduced to 3 dimensions using [UMAP](https://umap-learn.readthedocs.io/en/latest/). See [this data generation notebook](https://github.com/ScaDS/vest/blob/main/examples/mnist/vision_embeddings_umap.ipynb).
 
