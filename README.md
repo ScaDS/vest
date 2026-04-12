@@ -78,6 +78,12 @@ test\Image_2562.jpg, 12.263655, 5.8971086, -0.066879705
   * 2 fingers: Zoom
   * 3 fingers: Pan view
 
+While navigating through space, you can press the "Add keyframe" button in this panel. You can also save and load lists of keyframes and play an animation travelling along the given path.
+
+![alt text](https://github.com/ScaDS/vest/blob/main/docs/images/image.png?raw=true)
+
+
+
 ## Example Gallery
 
 ### CHAMMI-75 Microscopy Images
