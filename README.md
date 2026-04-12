@@ -4,7 +4,7 @@ Browser-based exploration of vision embeddings in 3D space. Navigate using your 
 
 ![teaser](https://github.com/ScaDS/vest/blob/main/docs/images/vest-butterflies-small.gif?raw=true)
 
-This video shows a VEST through [butterfly images](https://www.kaggle.com/datasets/phucthaiv02/butterfly-image-classification) published on kaggle by DePie. The embedding was generated using [openai/clip-vit-base-patch32](https://huggingface.co/openai/clip-vit-base-patch32) and reduced to 3 dimensions using a [UMAP](https://pypi.org/project/umap-learn/). [Full example](https://github.com/ScaDS/vest/tree/main/examples/butterflies)
+This video shows a VEST through [butterfly images](https://www.kaggle.com/datasets/phucthaiv02/butterfly-image-classification) published on kaggle by DePie. The embedding was generated using [openai/clip-vit-base-patch32](https://huggingface.co/openai/clip-vit-base-patch32) and reduced to 3 dimensions using a [UMAP](https://pypi.org/project/umap-learn/). Read the [full example](https://github.com/ScaDS/vest/tree/main/examples/butterflies) and download the [video](https://github.com/ScaDS/vest/raw/refs/heads/main/docs/images/vest-butterflies.mp4).
 
 
 ## Features
