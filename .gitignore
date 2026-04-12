@@ -146,3 +146,9 @@ examples/pdfs3
 examples/slideinsight
 examples/chammi-75/images
 examples/chammi-75/data.csv
+
+examples/sentinelsat/
+examples/wind-turbine-data/__MACOSX/
+examples/wind-turbine-data/images/
+examples/wind-turbine-data/labels/
+examples/wind-turbine-data/domain_overview.json
