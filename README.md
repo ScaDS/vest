@@ -74,9 +74,10 @@ test\Image_2562.jpg, 12.263655, 5.8971086, -0.066879705
 - **Y** - Move down
 - **Mouse** - Look around (click to enable pointer lock)
 - **Touch control**
-  * 1 finger: Rotate view
+  * 1 finger: Pan view
   * 2 fingers: Zoom
-  * 3 fingers: Pan view
+
+![alt text](https://github.com/ScaDS/vest/blob/main/docs/images/vest-touch.gif?raw=true)
 
 While navigating through space, you can press the "Add keyframe" button in this panel. You can also save and load lists of keyframes and play an animation travelling along the given path.
 
