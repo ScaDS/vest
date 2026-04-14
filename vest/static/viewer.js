@@ -390,6 +390,10 @@ class ImageViewer {
         this.imageSize = 0.25; // Default image size
         this.renderImages = true; // Render images flag
         this.lastTime = performance.now();
+        
+        // Store initial camera state for reset (will be set after data loads)
+        this.initialCameraPosition = null;
+        this.initialCameraTarget = null;
 
         // Mini side-views (XY, XZ, YZ)
         this.sideViews = {
@@ -664,6 +668,10 @@ class ImageViewer {
                 centerZ + maxDist
             );
             this.camera.lookAt(centerX, centerY, centerZ);
+            
+            // Store this as the initial camera state for reset view
+            this.initialCameraPosition = this.camera.position.clone();
+            this.initialCameraTarget = new THREE.Vector3(centerX, centerY, centerZ);
         }
     }
 
@@ -1449,9 +1457,11 @@ class ImageViewer {
         const playBtn = document.getElementById('play-keyframes-btn');
         const speedSlider = document.getElementById('keyframe-speed-slider');
         const speedValue = document.getElementById('keyframe-speed-value');
+        const resetViewBtn = document.getElementById('reset-view-btn');
 
         addBtn.addEventListener('click', () => this.addKeyframe());
         playBtn.addEventListener('click', () => this.togglePlayKeyframes());
+        resetViewBtn.addEventListener('click', () => this.resetView());
         
         speedSlider.addEventListener('input', (e) => {
             this.keyframeSpeed = parseFloat(e.target.value);
@@ -1479,6 +1489,18 @@ class ImageViewer {
         
         this.keyframes.push(keyframe);
         this.updateKeyframesList();
+    }
+
+    resetView() {
+        // Reset camera to initial position and orientation (based on data bounds)
+        if (this.initialCameraPosition && this.initialCameraTarget) {
+            this.camera.position.copy(this.initialCameraPosition);
+            this.camera.lookAt(this.initialCameraTarget);
+        } else {
+            // Fallback if data hasn't loaded yet
+            this.camera.position.set(0, 50, 100);
+            this.camera.lookAt(0, 0, 0);
+        }
     }
 
     updateKeyframesList() {
