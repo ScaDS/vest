@@ -76,6 +76,9 @@ test\Image_2562.jpg, 12.263655, 5.8971086, -0.066879705
 - **Touch control**
   * 1 finger: Rotate view
   * 2 fingers: Zoom
+  * 3 fingers: Pan view
+
+Note: On Windows, 3-finger touch gestures are per default overwritten by the operating system. To deactivate operarting systemm touch gestures go to the System Settings > Bluetooth & devices > Touch and turn `Three- and four-finger touch gestures` off.
 
 ![alt text](https://github.com/ScaDS/vest/blob/main/docs/images/vest-touch.gif?raw=true)
 
