@@ -7,8 +7,7 @@ This package provides tools to visualize images placed in 3D space, allowing
 interactive exploration using mouse and keyboard controls.
 """
 
-__version__ = "0.1.0"
-__author__ = "Your Name"
+__version__ = "0.2.0"
 
 from .app import create_app
 from .data_loader import DataLoader
