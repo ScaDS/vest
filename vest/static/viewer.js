@@ -366,9 +366,17 @@ class CameraController {
             this.camera.position.add(right.multiplyScalar(this.strafeSpeed * deltaTime));
         }
 
-        // Move up/down (vertical)
+        // Move up/down (vertical) relative to camera orientation
         if (Math.abs(this.verticalSpeed) > 0) {
-            const up = new THREE.Vector3(0, 1, 0);
+            const forward = new THREE.Vector3();
+            this.camera.getWorldDirection(forward);
+
+            const right = new THREE.Vector3();
+            right.crossVectors(forward, this.camera.up).normalize();
+
+            const up = new THREE.Vector3();
+            up.crossVectors(right, forward).normalize();
+
             this.camera.position.add(up.multiplyScalar(this.verticalSpeed * deltaTime));
         }
     }
