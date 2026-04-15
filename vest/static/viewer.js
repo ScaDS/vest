@@ -1267,6 +1267,11 @@ class ImageViewer {
                 // Update material
                 sprite.material.color.setHex(color);
                 sprite.material.opacity = opacity;
+                
+                // Make sprite visible now that color is set (prevents white flash on load)
+                if (!sprite.visible) {
+                    sprite.visible = true;
+                }
             }
             
             // Face camera (sprites automatically billboard, meshes need manual update)
@@ -1298,6 +1303,9 @@ class ImageViewer {
         sprite.userData.imageLoadPending = true;
         sprite.userData.isImage = true;
         sprite.userData.isSprite = false;
+        
+        // Hide the sprite while the image is loading to prevent white square flash
+        sprite.visible = false;
 
         const isRequestStillValid = () => {
             const current = this.getRenderableByPointIndex(pointIndex);
@@ -1353,19 +1361,13 @@ class ImageViewer {
                 const aspect = canvas.width / canvas.height;
                 currentObj.userData.aspect = aspect;
                 
-                // Calculate initial size with distance-based scaling to match render loop logic
-                const distance = this.camera.position.distanceTo(currentObj.position);
-                const baseHeight = this.imageSize;
+                // Match the original sprite size (0.5 units)
+                // Use the sprite's scale as base to ensure smooth transition
+                const spriteBaseSize = 0.5; // matches the initial sprite scale
+                const baseHeight = spriteBaseSize;
                 const baseWidth = baseHeight * aspect;
                 
-                // Apply distance-based scaling (matching the logic in updateSprites)
-                const minDistance = 5.0; // Reference distance
-                const distanceScale = Math.sqrt(distance / minDistance);
-                
-                const finalHeight = baseHeight * distanceScale;
-                const finalWidth = baseWidth * distanceScale;
-                
-                const newGeometry = new THREE.PlaneGeometry(finalWidth, finalHeight);
+                const newGeometry = new THREE.PlaneGeometry(baseWidth, baseHeight);
                 const imageMaterial = new THREE.MeshBasicMaterial({ 
                     map: framedTexture,
                     transparent: true,
@@ -1385,6 +1387,7 @@ class ImageViewer {
                     mesh.userData.isImage = true;
                     mesh.userData.isSprite = false;
                     mesh.userData.imageLoadPending = false;
+                    mesh.visible = true; // Ensure mesh is visible
                     
                     // Replace in array
                     const index = this.imageSprites.indexOf(currentObj);
@@ -1402,6 +1405,7 @@ class ImageViewer {
                     currentObj.userData.isImage = true;
                     currentObj.userData.isSprite = false;
                     currentObj.userData.imageLoadPending = false;
+                    currentObj.visible = true; // Ensure mesh is visible
                 }
                 
                 // Clean up original texture
@@ -1414,6 +1418,7 @@ class ImageViewer {
                     currentObj.userData.imageLoadPending = false;
                     currentObj.userData.isImage = false;
                     currentObj.userData.isSprite = true;
+                    currentObj.visible = true; // Make sprite visible again on error
                 }
                 console.warn(`Failed to load image: ${sprite.userData.filename}`, error);
             }
@@ -1456,6 +1461,7 @@ class ImageViewer {
             newSprite.userData.isImage = false;
             newSprite.userData.isSprite = true;
             newSprite.userData.imageLoadPending = false;
+            newSprite.visible = false; // Hide initially to prevent white flash
             
             // Replace in array
             const index = this.imageSprites.indexOf(sprite);
@@ -1475,6 +1481,7 @@ class ImageViewer {
             sprite.userData.isImage = false;
             sprite.userData.isSprite = true;
             sprite.userData.imageLoadPending = false;
+            sprite.visible = false; // Hide initially to prevent white flash
         }
     }
 
