@@ -389,6 +389,8 @@ class ImageViewer {
         this.bounds = null;
         this.imageSize = 0.25; // Default image size
         this.renderImages = true; // Render images flag
+        this.fovConeAngle = 35; // Field of view cone angle in degrees
+        this.fovConeThreshold = 0.5; // Cosine of cone angle (dot product threshold)
         this.lastTime = performance.now();
         
         // Store initial camera state for reset (will be set after data loads)
@@ -460,6 +462,9 @@ class ImageViewer {
 
         // Setup nearest count slider
         this.initNearestCountSlider();
+
+        // Setup FOV cone slider
+        this.initFovConeSlider();
 
         // Setup side-views
         this.initSideViews();
@@ -728,6 +733,29 @@ class ImageViewer {
         
         // Listen for changes
         slider.addEventListener('input', updateNearestCount);
+    }
+
+    initFovConeSlider() {
+        const slider = document.getElementById('fov-cone-slider');
+        const valueDisplay = document.getElementById('fov-cone-value');
+        
+        if (!slider || !valueDisplay) return;
+        
+        const updateFovCone = () => {
+            this.fovConeAngle = parseFloat(slider.value);
+            valueDisplay.textContent = this.fovConeAngle.toFixed(0);
+            
+            // Convert angle to dot product threshold
+            // Cone angle is the full cone, so half-angle is used for cosine
+            const halfAngleRad = (this.fovConeAngle / 2) * (Math.PI / 180);
+            this.fovConeThreshold = Math.cos(halfAngleRad);
+        };
+        
+        // Initialize display
+        updateFovCone();
+        
+        // Listen for changes
+        slider.addEventListener('input', updateFovCone);
     }
 
     initSideViews() {
@@ -1130,14 +1158,14 @@ class ImageViewer {
             const toSprite = new THREE.Vector3().subVectors(sprite.position, this.camera.position);
             toSprite.normalize();
             
-            // Dot product: positive means in front, negative means behind
+            // Dot product: check if sprite is within FOV cone
             const dotProduct = cameraForward.dot(toSprite);
             
             return {
                 sprite,
                 distance,
                 index,
-                inFront: dotProduct > 0
+                inFront: dotProduct > this.fovConeThreshold
             };
         });
 
