@@ -47,6 +47,79 @@
             padding: 12px;
         }
 
+        .panel-top-right-control {
+            width: 100%;
+        }
+
+        .panel-top-right-control .info-label {
+            margin-bottom: 4px;
+        }
+
+        .panel-top-right-control select {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(74, 158, 255, 0.4);
+            border-radius: 4px;
+            color: #ffffff;
+            padding: 6px 8px;
+            font-size: 12px;
+        }
+
+        .panel-top-right-control select:focus {
+            outline: none;
+            border-color: #4a9eff;
+        }
+
+        .color-intensity-controls {
+            margin-top: 8px;
+        }
+
+        .color-intensity-controls.hidden {
+            display: none;
+        }
+
+        .color-gradient-track {
+            position: relative;
+            width: 100%;
+            height: 7px;
+            border-radius: 999px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: linear-gradient(90deg, rgb(49, 130, 189) 0%, rgb(255, 255, 255) 50%, rgb(230, 97, 1) 100%);
+        }
+
+        .color-gradient-mask {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.45);
+            pointer-events: none;
+        }
+
+        #color-gradient-mask-left {
+            left: 0;
+            width: 0;
+        }
+
+        #color-gradient-mask-right {
+            right: 0;
+            width: 0;
+        }
+
+        .intensity-values {
+            margin-top: 4px;
+            display: flex;
+            justify-content: space-between;
+            color: #9db4cc;
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+        }
+
+        .color-intensity-controls input[type="range"] {
+            width: 100%;
+            margin-top: 4px;
+        }
+
         .left-panel h2,
         .left-panel h3 {
             margin-bottom: 8px;
@@ -649,6 +722,28 @@
         <div class="side-view">
             <div class="side-title">Y–Z</div>
             <canvas id="view-yz" width="224" height="140"></canvas>
+        </div>
+        <div class="side-view">
+            <div class="side-title">Visualization</div>
+            <div class="panel-top-right-control">
+                <div class="info-label">Color By</div>
+                <select id="color-mode-select">
+                    <option value="xyz">X/Y/Z</option>
+                </select>
+                <div id="color-intensity-controls" class="color-intensity-controls hidden">
+                    <div class="info-label" style="margin-top: 7px;">Intensity Range</div>
+                    <div class="color-gradient-track" id="color-gradient-track">
+                        <div class="color-gradient-mask" id="color-gradient-mask-left"></div>
+                        <div class="color-gradient-mask" id="color-gradient-mask-right"></div>
+                    </div>
+                    <div class="intensity-values">
+                        <span id="color-intensity-min-value">-</span>
+                        <span id="color-intensity-max-value">-</span>
+                    </div>
+                    <input type="range" id="color-intensity-min-slider" value="0" step="0.01">
+                    <input type="range" id="color-intensity-max-slider" value="1" step="0.01">
+                </div>
+            </div>
         </div>
     </div>
 
