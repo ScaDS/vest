@@ -651,30 +651,6 @@
             <div class="info-label">Near Point</div>
             <div class="info-value" id="near-point">-</div>
         </div>
-        <div class="info-group">
-            <div class="info-label">Image Size: <span id="image-size-value">0.25</span></div>
-            <input type="range" id="image-size-slider" min="-2" max="1" step="0.01" value="-0.602" style="width: 100%; margin-top: 5px;">
-            <div style="font-size: 10px; color: #666; margin-top: 2px; display: flex; justify-content: space-between;">
-                <span>0.01</span>
-                <span>10</span>
-            </div>
-        </div>
-        <div class="info-group">
-            <div class="info-label">Nearest Images: <span id="nearest-count-value">50</span></div>
-            <input type="range" id="nearest-count-slider" min="1" max="500" step="1" value="50" style="width: 100%; margin-top: 5px;">
-            <div style="font-size: 10px; color: #666; margin-top: 2px; display: flex; justify-content: space-between;">
-                <span>1</span>
-                <span>All</span>
-            </div>
-        </div>
-        <div class="info-group">
-            <div class="info-label">View Cone Angle: <span id="fov-cone-value">35</span>°</div>
-            <input type="range" id="fov-cone-slider" min="0" max="90" step="1" value="35" style="width: 100%; margin-top: 5px;">
-            <div style="font-size: 10px; color: #666; margin-top: 2px; display: flex; justify-content: space-between;">
-                <span>Narrow (0°)</span>
-                <span>Wide (90°)</span>
-            </div>
-        </div>
         </div>
         
         <!-- Keyframes Panel -->
@@ -726,7 +702,6 @@
         <div class="side-view">
             <div class="side-title">Visualization</div>
             <div class="panel-top-right-control">
-                <div class="info-label">Color By</div>
                 <select id="color-mode-select">
                     <option value="xyz">X/Y/Z</option>
                 </select>
@@ -742,6 +717,18 @@
                     </div>
                     <input type="range" id="color-intensity-min-slider" value="0" step="0.01">
                     <input type="range" id="color-intensity-max-slider" value="1" step="0.01">
+                </div>
+                <div class="info-group" style="margin-top: 10px;">
+                    <div class="info-label">Image Size: <span id="image-size-value">0.25</span></div>
+                    <input type="range" id="image-size-slider" min="-2" max="1" step="0.01" value="-0.602" style="width: 100%; margin-top: 5px;">
+                </div>
+                <div class="info-group">
+                    <div class="info-label">Nearest Images: <span id="nearest-count-value">50</span></div>
+                    <input type="range" id="nearest-count-slider" min="1" max="500" step="1" value="50" style="width: 100%; margin-top: 5px;">
+                </div>
+                <div class="info-group">
+                    <div class="info-label">View Cone Angle: <span id="fov-cone-value">35</span>°</div>
+                    <input type="range" id="fov-cone-slider" min="0" max="90" step="1" value="35" style="width: 100%; margin-top: 5px;">
                 </div>
             </div>
         </div>
