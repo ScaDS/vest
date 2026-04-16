@@ -419,6 +419,12 @@ class ImageViewer {
         this.keyframeProgress = 0;
         this.keyframeStartTime = 0;
 
+        // Coloring mode: default to legacy XYZ mapping.
+        this.colorMode = 'xyz';
+        this.numericColorColumns = [];
+        this.numericColumnBounds = {};
+        this.colorDisplayRanges = {};
+
         this.init();
         this.loadData();
         this.animate();
@@ -480,6 +486,10 @@ class ImageViewer {
         // Setup keyframe controls
         this.initKeyframeControls();
 
+        // Setup color mode dropdown
+        this.initColorModeControl();
+        this.initColorIntensityControls();
+
         // Setup arrow button controls
         this.controller.setupArrowButtons();
 
@@ -488,6 +498,10 @@ class ImageViewer {
     }
 
     computeColorFromXYZ(x, y, z, bounds) {
+        if (!bounds) {
+            return { r: 200, g: 200, b: 200 };
+        }
+
         // Normalize coordinates to [-0.5, 0.5] range (centered)
         const xNorm = (x - bounds.x[0]) / (bounds.x[1] - bounds.x[0]) - 0.5;
         const yNorm = (y - bounds.y[0]) / (bounds.y[1] - bounds.y[0]) - 0.5;
@@ -544,6 +558,223 @@ class ImageViewer {
         return { r, g, b };
     }
 
+    interpolateRgb(colorA, colorB, t) {
+        const clampT = Math.max(0, Math.min(1, t));
+        return {
+            r: Math.round(colorA.r + (colorB.r - colorA.r) * clampT),
+            g: Math.round(colorA.g + (colorB.g - colorA.g) * clampT),
+            b: Math.round(colorA.b + (colorB.b - colorA.b) * clampT)
+        };
+    }
+
+    computeBlueWhiteOrangeColor(value, min, max) {
+        if (!Number.isFinite(value) || !Number.isFinite(min) || !Number.isFinite(max) || max <= min) {
+            return { r: 255, g: 255, b: 255 };
+        }
+
+        const t = (value - min) / (max - min);
+        const lowBlue = { r: 49, g: 130, b: 189 };
+        const midWhite = { r: 255, g: 255, b: 255 };
+        const highOrange = { r: 230, g: 97, b: 1 };
+
+        if (t <= 0.5) {
+            return this.interpolateRgb(lowBlue, midWhite, t * 2);
+        }
+
+        return this.interpolateRgb(midWhite, highOrange, (t - 0.5) * 2);
+    }
+
+    getPointColorRGB(point) {
+        if (!point) {
+            return { r: 200, g: 200, b: 200 };
+        }
+
+        if (this.colorMode === 'xyz') {
+            return this.computeColorFromXYZ(point.x, point.y, point.z, this.bounds);
+        }
+
+        const bounds = this.colorDisplayRanges[this.colorMode] || this.numericColumnBounds[this.colorMode];
+        const numericValue = Number(point[this.colorMode]);
+        return this.computeBlueWhiteOrangeColor(numericValue, bounds?.min, bounds?.max);
+    }
+
+    refreshColorRendering() {
+        this.drawSideViewsStatic();
+        this.reloadLoadedImages();
+        this.updateNearestPoint();
+    }
+
+    initColorModeControl() {
+        const select = document.getElementById('color-mode-select');
+        if (!select) return;
+
+        select.addEventListener('change', (e) => {
+            this.colorMode = e.target.value || 'xyz';
+            this.updateColorIntensityUI();
+            this.refreshColorRendering();
+        });
+    }
+
+    initColorIntensityControls() {
+        const minSlider = document.getElementById('color-intensity-min-slider');
+        const maxSlider = document.getElementById('color-intensity-max-slider');
+
+        if (!minSlider || !maxSlider) return;
+
+        const onSliderChange = (source) => {
+            if (this.colorMode === 'xyz') {
+                return;
+            }
+
+            const col = this.colorMode;
+            const fullBounds = this.numericColumnBounds[col];
+            if (!fullBounds) {
+                return;
+            }
+
+            let minVal = parseFloat(minSlider.value);
+            let maxVal = parseFloat(maxSlider.value);
+
+            if (source === 'min' && minVal > maxVal) {
+                maxVal = minVal;
+                maxSlider.value = String(maxVal);
+            }
+
+            if (source === 'max' && maxVal < minVal) {
+                minVal = maxVal;
+                minSlider.value = String(minVal);
+            }
+
+            minVal = Math.max(fullBounds.min, Math.min(fullBounds.max, minVal));
+            maxVal = Math.max(fullBounds.min, Math.min(fullBounds.max, maxVal));
+
+            this.colorDisplayRanges[col] = { min: minVal, max: maxVal };
+            this.updateColorIntensityUI();
+            this.refreshColorRendering();
+        };
+
+        minSlider.addEventListener('input', () => onSliderChange('min'));
+        maxSlider.addEventListener('input', () => onSliderChange('max'));
+    }
+
+    updateColorIntensityUI() {
+        const container = document.getElementById('color-intensity-controls');
+        const minSlider = document.getElementById('color-intensity-min-slider');
+        const maxSlider = document.getElementById('color-intensity-max-slider');
+        const minValue = document.getElementById('color-intensity-min-value');
+        const maxValue = document.getElementById('color-intensity-max-value');
+        const leftMask = document.getElementById('color-gradient-mask-left');
+        const rightMask = document.getElementById('color-gradient-mask-right');
+
+        if (!container || !minSlider || !maxSlider || !minValue || !maxValue || !leftMask || !rightMask) {
+            return;
+        }
+
+        if (this.colorMode === 'xyz') {
+            container.classList.add('hidden');
+            return;
+        }
+
+        const fullBounds = this.numericColumnBounds[this.colorMode];
+        if (!fullBounds) {
+            container.classList.add('hidden');
+            return;
+        }
+
+        container.classList.remove('hidden');
+
+        if (!this.colorDisplayRanges[this.colorMode]) {
+            this.colorDisplayRanges[this.colorMode] = {
+                min: fullBounds.min,
+                max: fullBounds.max
+            };
+        }
+
+        const displayRange = this.colorDisplayRanges[this.colorMode];
+        displayRange.min = Math.max(fullBounds.min, Math.min(fullBounds.max, displayRange.min));
+        displayRange.max = Math.max(fullBounds.min, Math.min(fullBounds.max, displayRange.max));
+        if (displayRange.max < displayRange.min) {
+            displayRange.max = displayRange.min;
+        }
+
+        const totalRange = Math.max(1e-12, fullBounds.max - fullBounds.min);
+        const step = totalRange / 500;
+
+        minSlider.min = String(fullBounds.min);
+        minSlider.max = String(fullBounds.max);
+        minSlider.step = String(step);
+        minSlider.value = String(displayRange.min);
+
+        maxSlider.min = String(fullBounds.min);
+        maxSlider.max = String(fullBounds.max);
+        maxSlider.step = String(step);
+        maxSlider.value = String(displayRange.max);
+
+        minValue.textContent = displayRange.min.toFixed(3);
+        maxValue.textContent = displayRange.max.toFixed(3);
+
+        const leftPct = ((displayRange.min - fullBounds.min) / totalRange) * 100;
+        const rightPct = ((displayRange.max - fullBounds.min) / totalRange) * 100;
+        leftMask.style.width = `${Math.max(0, Math.min(100, leftPct)).toFixed(2)}%`;
+        rightMask.style.width = `${Math.max(0, Math.min(100, 100 - rightPct)).toFixed(2)}%`;
+    }
+
+    updateColorModeOptions() {
+        const select = document.getElementById('color-mode-select');
+        if (!select) return;
+
+        const preserveMode = this.colorMode;
+        this.numericColorColumns = [];
+        this.numericColumnBounds = {};
+
+        if (this.points.length > 0) {
+            const firstPoint = this.points[0] || {};
+            const candidateColumns = Object.keys(firstPoint).filter(col => !['x', 'y', 'z', 'filename'].includes(col));
+
+            candidateColumns.forEach(col => {
+                const numericValues = this.points
+                    .map(p => Number(p[col]))
+                    .filter(v => Number.isFinite(v));
+
+                if (numericValues.length === 0) {
+                    return;
+                }
+
+                this.numericColorColumns.push(col);
+                this.numericColumnBounds[col] = {
+                    min: Math.min(...numericValues),
+                    max: Math.max(...numericValues)
+                };
+
+                if (!this.colorDisplayRanges[col]) {
+                    this.colorDisplayRanges[col] = {
+                        min: this.numericColumnBounds[col].min,
+                        max: this.numericColumnBounds[col].max
+                    };
+                }
+            });
+        }
+
+        select.innerHTML = '';
+
+        const xyzOption = document.createElement('option');
+        xyzOption.value = 'xyz';
+        xyzOption.textContent = 'X/Y/Z';
+        select.appendChild(xyzOption);
+
+        this.numericColorColumns.forEach(col => {
+            const option = document.createElement('option');
+            option.value = col;
+            option.textContent = col;
+            select.appendChild(option);
+        });
+
+        const canKeepPrevious = preserveMode === 'xyz' || this.numericColorColumns.includes(preserveMode);
+        this.colorMode = canKeepPrevious ? preserveMode : 'xyz';
+        select.value = this.colorMode;
+        this.updateColorIntensityUI();
+    }
+
     async loadData() {
         try {
             const response = await fetch('/api/data');
@@ -551,6 +782,7 @@ class ImageViewer {
 
             this.points = data.points;
             this.imageBasePath = data.image_base_path;
+            this.updateColorModeOptions();
 
             // Also fetch stats for bounds
             const statsResponse = await fetch('/api/stats');
@@ -998,8 +1230,7 @@ class ImageViewer {
             const [a, b] = v.axes;
             const radius = 2; // Fixed size, independent of image size
             this.points.forEach(p => {
-                // Compute color based on XYZ position
-                const rgb = this.computeColorFromXYZ(p.x, p.y, p.z, this.bounds);
+                const rgb = this.getPointColorRGB(p);
                 ctx.fillStyle = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
                 
                 const px = this.worldToCanvas(v, p[a], p[b]);
@@ -1252,13 +1483,8 @@ class ImageViewer {
                 // Apply distance scaling with slight size variation based on depth
                 let finalSize = baseSize * distanceScale * (1.0 - normalizedDist * 0.3);
                 
-                // Compute color based on XYZ position
-                const rgb = this.computeColorFromXYZ(
-                    sprite.position.x,
-                    sprite.position.y,
-                    sprite.position.z,
-                    this.bounds
-                );
+                const pointData = this.points[sprite.userData.index];
+                const rgb = this.getPointColorRGB(pointData);
                 const color = (rgb.r << 16) | (rgb.g << 8) | rgb.b;
                 
                 // Opacity: more opaque when closer
@@ -1338,9 +1564,9 @@ class ImageViewer {
                     return;
                 }
 
-                // Compute the color this point would have based on its position
-                const pos = currentObj.position;
-                const rgb = this.computeColorFromXYZ(pos.x, pos.y, pos.z, this.bounds);
+                // Frame color follows the active color mode.
+                const pointData = this.points[pointIndex];
+                const rgb = this.getPointColorRGB(pointData);
                 const frameColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
                 
                 // Create a canvas to draw the image with a colored frame
