@@ -66,6 +66,7 @@ train\Image_420.jpg, 14.487134, 3.430255, -2.0715249
 test\Image_2562.jpg, 12.263655, 5.8971086, -0.066879705
 ```
 
+
 ## Controls
 
 ### Camera Movement
@@ -90,6 +91,10 @@ On the right, you see three panels visualizing X-Y, X-Z and Y-Z projections. The
 
 ![alt text](https://github.com/ScaDS/vest/blob/main/docs/images/projection_viewpoint.png?raw=true)
 
+
+If your CSV file contains additional numeric columns, you can use them for coloured data visualization. Choose which column to use for colouring and min/max intensity in the lower right corner of the user interface:
+
+![alt text](https://github.com/ScaDS/vest/blob/main/docs/images/colormode.png)
 
 ## Example Gallery
 
