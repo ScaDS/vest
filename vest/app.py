@@ -4,6 +4,7 @@ Flask application for the 3D image visualization engine.
 
 import os
 import json
+import math
 import pandas as pd
 from flask import Flask, render_template, jsonify, request, send_file
 from pathlib import Path
@@ -21,6 +22,19 @@ def create_app(config_name='development'):
     # Store data in app context
     app.data_df = None
     app.image_base_path = None
+
+    def sanitize_for_json(value):
+        """Recursively replace non-JSON-safe numeric values with None."""
+        if isinstance(value, dict):
+            return {k: sanitize_for_json(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [sanitize_for_json(v) for v in value]
+        if isinstance(value, tuple):
+            return [sanitize_for_json(v) for v in value]
+        if isinstance(value, float):
+            if math.isnan(value) or math.isinf(value):
+                return None
+        return value
     
     @app.route('/')
     def index():
@@ -45,8 +59,8 @@ def create_app(config_name='development'):
         if app.data_df is None:
             return jsonify({'points': []})
         
-        # Convert DataFrame to list of dicts
-        points = app.data_df.to_dict('records')
+        # Convert DataFrame to list of dicts and ensure valid JSON values.
+        points = sanitize_for_json(app.data_df.to_dict('records'))
         return jsonify({
             'points': points,
             'image_base_path': app.image_base_path
@@ -98,14 +112,14 @@ def create_app(config_name='development'):
             })
         
         df = app.data_df
-        return jsonify({
+        return jsonify(sanitize_for_json({
             'point_count': len(df),
             'bounds': {
                 'x': [float(df['x'].min()), float(df['x'].max())],
                 'y': [float(df['y'].min()), float(df['y'].max())],
                 'z': [float(df['z'].min()), float(df['z'].max())]
             }
-        })
+        }))
     
     @app.route('/api/keyframes/list')
     def list_keyframes():
@@ -197,11 +211,11 @@ def create_app(config_name='development'):
                     }
                 })
             
-            return jsonify({
+            return jsonify(sanitize_for_json({
                 'status': 'success',
                 'keyframes': keyframes,
                 'filename': filename
-            })
+            }))
         except Exception as e:
             return jsonify({'error': str(e)}), 400
     
