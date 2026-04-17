@@ -33,6 +33,7 @@
             flex-direction: column;
             gap: 6px;
             z-index: 100;
+            transition: opacity 0.25s ease;
         }
 
         .left-panel {
@@ -202,6 +203,7 @@
             flex-direction: column;
             gap: 10px;
             z-index: 110;
+            transition: opacity 0.25s ease;
         }
 
         .side-view {
@@ -370,7 +372,13 @@
             bottom: 20px;
             right: 20px;
             z-index: 120;
-            width: 150px;
+            width: 260px;
+        }
+
+        .panel-scale-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         #panel-scale-slider input[type="range"] {
@@ -411,6 +419,21 @@
 
         #panel-scale-slider input[type="range"]::-moz-range-thumb:hover {
             background: #6bb3ff;
+        }
+
+        .auto-hide-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #c7d8eb;
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        .auto-hide-toggle input[type="checkbox"] {
+            accent-color: #4a9eff;
+            cursor: pointer;
         }
 
         /* Modal Dialog Styles */
@@ -736,7 +759,13 @@
 
     <!-- Panel Scale Slider -->
     <div id="panel-scale-slider">
-        <input type="range" id="panel-scale" min="50" max="150" value="100" step="5">
+        <div class="panel-scale-row">
+            <input type="range" id="panel-scale" min="50" max="150" value="100" step="5">
+            <label class="auto-hide-toggle" for="auto-hide-panels">
+                <input type="checkbox" id="auto-hide-panels">
+                <span>Auto hide</span>
+            </label>
+        </div>
     </div>
 
     <!-- Save Modal -->
@@ -784,8 +813,48 @@
     <script>
         // Panel scale slider functionality
         const panelScaleSlider = document.getElementById('panel-scale');
+        const autoHideCheckbox = document.getElementById('auto-hide-panels');
         const leftPanelsContainer = document.getElementById('left-panels');
         const sideViewsContainer = document.getElementById('side-views');
+        const PANEL_HIDE_DELAY_MS = 10000;
+        let autoHideTimeoutId = null;
+        let panelsHidden = false;
+
+        const showPanels = () => {
+            if (!leftPanelsContainer || !sideViewsContainer || !panelsHidden) return;
+            leftPanelsContainer.style.opacity = '1';
+            sideViewsContainer.style.opacity = '1';
+            leftPanelsContainer.style.pointerEvents = 'auto';
+            sideViewsContainer.style.pointerEvents = 'auto';
+            panelsHidden = false;
+        };
+
+        const hidePanels = () => {
+            if (!leftPanelsContainer || !sideViewsContainer || !autoHideCheckbox?.checked) return;
+            leftPanelsContainer.style.opacity = '0';
+            sideViewsContainer.style.opacity = '0';
+            leftPanelsContainer.style.pointerEvents = 'none';
+            sideViewsContainer.style.pointerEvents = 'none';
+            panelsHidden = true;
+        };
+
+        const clearAutoHideTimer = () => {
+            if (autoHideTimeoutId !== null) {
+                clearTimeout(autoHideTimeoutId);
+                autoHideTimeoutId = null;
+            }
+        };
+
+        const scheduleAutoHide = () => {
+            clearAutoHideTimer();
+            if (!autoHideCheckbox?.checked) return;
+            autoHideTimeoutId = setTimeout(hidePanels, PANEL_HIDE_DELAY_MS);
+        };
+
+        const handleUserActivity = () => {
+            showPanels();
+            scheduleAutoHide();
+        };
         
         panelScaleSlider.addEventListener('input', (e) => {
             const scale = e.target.value / 100;
@@ -797,6 +866,21 @@
             // Scale entire right side views container
             sideViewsContainer.style.transform = `scale(${scale})`;
             sideViewsContainer.style.transformOrigin = 'top right';
+
+            handleUserActivity();
+        });
+
+        autoHideCheckbox.addEventListener('change', () => {
+            showPanels();
+            if (autoHideCheckbox.checked) {
+                scheduleAutoHide();
+            } else {
+                clearAutoHideTimer();
+            }
+        });
+
+        ['mousemove', 'mousedown', 'keydown', 'wheel', 'touchstart', 'pointerdown'].forEach((eventName) => {
+            document.addEventListener(eventName, handleUserActivity, { passive: true });
         });
     </script>
 </body>
