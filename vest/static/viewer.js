@@ -1574,7 +1574,7 @@ class ImageViewer {
                 const ctx = canvas.getContext('2d');
                 
                 const img = texture.image;
-                const frameWidth = Math.max(3, Math.floor(img.width * 0.01)); // 1% of image width, minimum 3px
+                const frameWidth = Math.max(3, Math.floor(img.width * 0.03)); // 3% of image width, minimum 3px
                 
                 // Set canvas size to accommodate image plus frame
                 canvas.width = img.width + frameWidth * 2;
