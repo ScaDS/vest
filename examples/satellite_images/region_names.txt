@@ -1,0 +1,116 @@
+Temperate forest
+Boreal forest
+Tropical rainforest
+Cloud forest
+Mangrove forest
+Savanna
+Grassland
+Steppe
+Prairie
+Shrubland
+Mediterranean scrubland
+Chaparral
+Heathland
+Wetland
+Marsh
+Swamp
+Bog
+Fen
+Peatland
+River delta
+Floodplain
+Estuary
+Coastal lagoon
+Coral reef
+Seagrass meadow
+Tidal flat
+Salt marsh
+Dune system
+Rocky coastline
+Volcanic highlands
+Alpine meadow
+Mountain ridge
+Valley floor
+Plateau
+Canyon
+Desert
+Semi-arid desert
+Salt flat
+Oasis
+Tundra
+Permafrost plain
+Glacier foreland
+Snowfield
+Karst landscape
+Badlands
+Alluvial plain
+Agricultural mosaic
+Orchard region
+Rice terrace landscape
+Urban fringe
+Suburban greenbelt
+Dense urban core
+Inner city district
+Downtown business district
+Historic city center
+Mixed-use city block
+High-rise residential district
+Mid-rise apartment district
+Low-rise residential neighborhood
+Suburban housing estate
+Garden suburb
+Peri-urban transition zone
+Satellite town
+Commuter town
+Market town
+Village center
+Rural village cluster
+Hamlet landscape
+Industrial park
+Logistics hub
+Warehouse district
+Commercial strip
+Retail park
+Shopping mall district
+Office campus
+University campus
+Hospital campus
+School district
+Sports complex zone
+Stadium district
+Railway station district
+Rail freight yard
+Intermodal terminal
+Container terminal
+Seaport district
+Harbor waterfront
+Marina district
+Shipyard zone
+Airport terminal zone
+Airport runway corridor
+Airport logistics zone
+Air cargo hub
+General aviation airfield
+Heliport zone
+Motorway interchange
+Motorway corridor
+Ring road corridor
+Expressway junction
+Urban arterial road network
+Bypass corridor
+Bridge crossing zone
+Tunnel portal zone
+Bus depot area
+Transit-oriented development
+Park-and-ride zone
+Roundabout-centered suburb
+Construction site district
+Brownfield redevelopment area
+Quarry edge settlement
+Mining town fringe
+Power plant zone
+Solar farm perimeter
+Wind farm service area
+Canal-side urban district
+Riverfront boulevard
+Flood-control levee corridor

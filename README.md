@@ -107,7 +107,11 @@ If your CSV file contains additional numeric columns, you can use them for colou
 
 This example was generated using the [CHAMMI-75](https://morgridge.org/research/labs/caicedo/chammi-75/) microscopy images dataset, which is licensed [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/deed.en). See how to [download this dataset programmatically](examples/chammi-75/download1000.ipynb) and [generate vest-compatible embeddings / data files](examples/chammi-75/vision_embeddings_umap.ipynb). Read the [full example](https://github.com/ScaDS/vest/tree/main/examples/chammi-75).
 
-### Satellite Images of wind turbines (and without)
+### Satellite Images
+
+![](https://github.com/ScaDS/vest/blob/main/docs/images/vest-sat_images.gif?raw=true)
+
+Here we see VEST through [396 Satellite images](ttps://doi.org/10.5281/zenodo.19635483). It contains satellite images from the US National Agricultural Imagery Program (NAIP). The embedding was generated using [openai/clip-vit-base-patch32](https://huggingface.co/openai/clip-vit-base-patch32) and reduced to 3 dimensions using a [UMAP](https://pypi.org/project/umap-learn/). Read the [full example](https://github.com/ScaDS/vest/tree/main/examples/satellite_images). [Download the video](https://github.com/ScaDS/vest/raw/refs/heads/main/docs/images/vest-sat_images.mp4)
 
 ![](https://github.com/ScaDS/vest/blob/main/docs/images/vest-wind-turbines.gif?raw=true)
 
@@ -124,6 +128,13 @@ This visualization uses a subsample of the [MNist dataset](https://huggingface.c
 ![teaser](https://github.com/ScaDS/vest/blob/main/docs/images/vest-covid19-xray.gif)
 
 In this example, we view X-Ray images of patients with COVID-19. We are using the covid-19-image-repository published under [CC-BY 3.0 unported](https://creativecommons.org/licenses/by/3.0/) license by Hinrich B. Winther, Hans Laser, Svetlana Gerbel, Sabine K. Maschke, Jan B. Hinrichs, Jens Vogel-Claussen, Frank K. Wacker, Marius M. Höper, Bernhard C. Meyer  (2020, [DOI: 10.6084/m9.figshare.12275009](https://doi.org/10.6084/m9.figshare.12275009)), downloaded from [https://github.com/ml-workgroup/covid-19-image-repository](https://github.com/ml-workgroup/covid-19-image-repository). The embedding was generated using [openai/clip-vit-base-patch32](https://huggingface.co/openai/clip-vit-base-patch32) and reduced to 3 dimensions using a [UMAP](https://pypi.org/project/umap-learn/). Read the [full example](https://github.com/ScaDS/vest/tree/main/examples/covid19-xray).
+
+### Logos
+
+![alt text](https://github.com/ScaDS/vest/blob/main/docs/images/vest-logos.png)
+
+This screenshot show a VEST through [199 AI-generated logos](https://doi.org/10.5281/zenodo.19633744) of hypothetical company names.
+The embedding was generated using [openai/clip-vit-base-patch32](https://huggingface.co/openai/clip-vit-base-patch32) and reduced to 3 dimensions using a [UMAP](https://pypi.org/project/umap-learn/). Read the [full example](https://github.com/ScaDS/vest/tree/main/examples/covid19-xray).
 
 ## Troubleshooting
 
