@@ -70,10 +70,13 @@ test\Image_2562.jpg, 12.263655, 5.8971086, -0.066879705
 ## Controls
 
 ### Camera Movement
-- **W / A / S / D** - Move forward, left, backward, right
-- **E** - Move up
-- **Y** - Move down
-- **Mouse** - Look around (click to enable pointer lock)
+- **W / A / S / D**: Move forward, left, backward, right
+- **E / Y**: Move up / Down
+- **I / J / K / L**: Rotate upward, left, downwar, righ
+- **U / M**: Rotate counter-clockwise, clockwise
+- **O**: Move to Near Point
+- **Space**: Add keyframe
+- **Mouse**: Look around (click to enable pointer lock)
 - **Touch control**
   * 1 finger: Rotate view
   * 2 fingers: Zoom
