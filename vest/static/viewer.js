@@ -1435,7 +1435,7 @@ class ImageViewer {
         offsetDirection.normalize();
 
         // Keep the camera extremely close to the near point, but not exactly at the same location.
-        const offsetDistance = Math.max(0.1, Math.min(0.001, this.imageSize * 0.1));
+        const offsetDistance = 0.11;
         const targetPosition = nearPointPosition.add(offsetDirection.multiplyScalar(offsetDistance));
 
         this.camera.position.copy(targetPosition);
