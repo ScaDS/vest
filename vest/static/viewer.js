@@ -882,10 +882,12 @@ class ImageViewer {
             const x = point.x;
             const y = point.y;
             const z = point.z;
+            const rgb = this.getPointColorRGB(point);
+            const color = (rgb.r << 16) | (rgb.g << 8) | rgb.b;
 
             // Create a sprite for point-like visualization
             const material = new THREE.SpriteMaterial({
-                color: 0xffffff,
+                color,
                 transparent: true,
                 opacity: 0.8,
                 sizeAttenuation: true
@@ -1483,6 +1485,42 @@ class ImageViewer {
         const minDist = inFrontSprites.length > 0 ? inFrontSprites[0].distance : 0;
         const distRange = maxDist - minDist;
 
+        const applySquareAppearance = (targetSprite, targetDistance) => {
+            // Normalize distance (0 = closest, 1 = furthest)
+            const normalizedDist = distRange > 0 ? (targetDistance - minDist) / distRange : 0;
+
+            // Base size in world units - use imageSize for consistency with images
+            const baseSize = this.imageSize;
+
+            // Distance-based scaling: use logarithmic scale to maintain more consistent size
+            // Scale grows slowly with distance to compensate for perspective shrinking
+            const minDistance = 5.0; // Reference distance
+            const distanceScale = Math.sqrt(targetDistance / minDistance);
+
+            // Apply distance scaling with slight size variation based on depth
+            const finalSize = baseSize * distanceScale * (1.0 - normalizedDist * 0.3);
+
+            const pointData = this.points[targetSprite.userData.index];
+            const rgb = this.getPointColorRGB(pointData);
+            const color = (rgb.r << 16) | (rgb.g << 8) | rgb.b;
+
+            // Opacity: more opaque when closer
+            const opacity = 1.0 - (normalizedDist * 0.4);
+
+            // Update sprite size and appearance
+            if (targetSprite.userData.isSprite) {
+                targetSprite.scale.set(finalSize, finalSize, 1);
+            } else if (targetSprite.geometry && targetSprite.geometry.type === 'PlaneGeometry') {
+                targetSprite.geometry.dispose();
+                targetSprite.geometry = new THREE.PlaneGeometry(finalSize, finalSize);
+            }
+
+            // Update material
+            targetSprite.material.color.setHex(color);
+            targetSprite.material.opacity = opacity;
+            targetSprite.visible = true;
+        };
+
         // Update all sprites
         distances.forEach((item, idx) => {
             const { sprite, distance, inFront } = item;
@@ -1494,6 +1532,10 @@ class ImageViewer {
                 // Load as image if not already loaded
                 if (!sprite.userData.isImage && !sprite.userData.imageLoadPending) {
                     this.loadSpriteAsImage(sprite);
+                    applySquareAppearance(sprite, distance);
+                } else if (sprite.userData.imageLoadPending) {
+                    // Keep placeholder square visible while texture is loading.
+                    applySquareAppearance(sprite, distance);
                 } else {
                     // Update image size dynamically based on current distance and imageSize setting
                     if (sprite.type === 'Mesh' && sprite.userData.aspect) {
@@ -1524,48 +1566,12 @@ class ImageViewer {
                 }
             } else {
                 // Convert to rectangle if it's currently an image
+                let squareSprite = sprite;
                 if (sprite.userData.isImage || sprite.userData.imageLoadPending) {
-                    this.convertSpriteToRectangle(sprite);
+                    squareSprite = this.convertSpriteToRectangle(sprite) || squareSprite;
                 }
-                
-                // Update dot appearance based on distance
-                // Normalize distance (0 = closest, 1 = furthest)
-                const normalizedDist = distRange > 0 ? (distance - minDist) / distRange : 0;
-                
-                // Base size in world units - use imageSize for consistency with images
-                const baseSize = this.imageSize;
-                
-                // Distance-based scaling: use logarithmic scale to maintain more consistent size
-                // Scale grows slowly with distance to compensate for perspective shrinking
-                const minDistance = 5.0; // Reference distance
-                const distanceScale = Math.sqrt(distance / minDistance);
-                
-                // Apply distance scaling with slight size variation based on depth
-                let finalSize = baseSize * distanceScale * (1.0 - normalizedDist * 0.3);
-                
-                const pointData = this.points[sprite.userData.index];
-                const rgb = this.getPointColorRGB(pointData);
-                const color = (rgb.r << 16) | (rgb.g << 8) | rgb.b;
-                
-                // Opacity: more opaque when closer
-                const opacity = 1.0 - (normalizedDist * 0.4);
-                
-                // Update sprite size and appearance
-                if (sprite.userData.isSprite) {
-                    sprite.scale.set(finalSize, finalSize, 1);
-                } else if (sprite.geometry && sprite.geometry.type === 'PlaneGeometry') {
-                    sprite.geometry.dispose();
-                    sprite.geometry = new THREE.PlaneGeometry(finalSize, finalSize);
-                }
-                
-                // Update material
-                sprite.material.color.setHex(color);
-                sprite.material.opacity = opacity;
-                
-                // Make sprite visible now that color is set (prevents white flash on load)
-                if (!sprite.visible) {
-                    sprite.visible = true;
-                }
+
+                applySquareAppearance(squareSprite, distance);
             }
             
             // Face camera (sprites automatically billboard, meshes need manual update)
@@ -1595,18 +1601,16 @@ class ImageViewer {
         const loadToken = (sprite.userData.imageLoadToken || 0) + 1;
         sprite.userData.imageLoadToken = loadToken;
         sprite.userData.imageLoadPending = true;
-        sprite.userData.isImage = true;
-        sprite.userData.isSprite = false;
-        
-        // Hide the sprite while the image is loading to prevent white square flash
-        sprite.visible = false;
+        sprite.userData.isImage = false;
+        sprite.userData.isSprite = true;
+        sprite.visible = true;
 
         const isRequestStillValid = () => {
             const current = this.getRenderableByPointIndex(pointIndex);
             if (!current?.userData) return false;
             return (
                 current.userData.imageLoadToken === loadToken &&
-                current.userData.isImage === true
+                current.userData.imageLoadPending === true
             );
         };
 
@@ -1723,12 +1727,16 @@ class ImageViewer {
 
     convertSpriteToRectangle(sprite) {
         if (!sprite?.userData) {
-            return;
+            return null;
         }
 
         // Invalidate any pending async image load for this point
         sprite.userData.imageLoadToken = (sprite.userData.imageLoadToken || 0) + 1;
         sprite.userData.imageLoadPending = false;
+
+        const pointData = this.points[sprite.userData.index];
+        const rgb = this.getPointColorRGB(pointData);
+        const squareColor = (rgb.r << 16) | (rgb.g << 8) | rgb.b;
 
         // Dispose of texture if it exists
         if (sprite.userData.texture) {
@@ -1743,7 +1751,7 @@ class ImageViewer {
             
             // Create new sprite
             const material = new THREE.SpriteMaterial({
-                color: 0xffffff,
+                color: squareColor,
                 transparent: true,
                 opacity: 0.8,
                 sizeAttenuation: true
@@ -1755,7 +1763,7 @@ class ImageViewer {
             newSprite.userData.isImage = false;
             newSprite.userData.isSprite = true;
             newSprite.userData.imageLoadPending = false;
-            newSprite.visible = false; // Hide initially to prevent white flash
+            newSprite.visible = true;
             
             // Replace in array
             const index = this.imageSprites.indexOf(sprite);
@@ -1763,11 +1771,12 @@ class ImageViewer {
                 this.imageSprites[index] = newSprite;
             }
             this.scene.add(newSprite);
+            return newSprite;
         } else {
             // Already a sprite, just update material
             this.disposeMaterial(sprite.material);
             sprite.material = new THREE.SpriteMaterial({
-                color: 0xffffff,
+                color: squareColor,
                 transparent: true,
                 opacity: 0.8,
                 sizeAttenuation: true
@@ -1775,7 +1784,8 @@ class ImageViewer {
             sprite.userData.isImage = false;
             sprite.userData.isSprite = true;
             sprite.userData.imageLoadPending = false;
-            sprite.visible = false; // Hide initially to prevent white flash
+            sprite.visible = true;
+            return sprite;
         }
     }
 
