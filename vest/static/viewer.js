@@ -327,7 +327,7 @@ class CameraController {
         if (this.keys['k']) euler.x -= this.rotationStep;
         if (this.keys['j']) euler.y += this.rotationStep;
         if (this.keys['l']) euler.y -= this.rotationStep;
-        if (this.keys['o']) euler.z -= this.rotationStep;
+        if (this.keys['u']) euler.z -= this.rotationStep;
         if (this.keys['m']) euler.z += this.rotationStep;
 
         // Prevent flipping over the top/bottom
@@ -485,6 +485,9 @@ class ImageViewer {
 
         // Setup keyframe controls
         this.initKeyframeControls();
+
+        // Setup near-point jump controls
+        this.initNearPointControls();
 
         // Setup color mode dropdown
         this.initColorModeControl();
@@ -1382,6 +1385,63 @@ class ImageViewer {
         }
     }
 
+    getNearestSpriteInfo(preferInFront = true) {
+        if (this.imageSprites.length === 0) {
+            return null;
+        }
+
+        const cameraForward = new THREE.Vector3();
+        this.camera.getWorldDirection(cameraForward);
+
+        const distances = this.imageSprites.map((sprite, index) => {
+            const distance = this.camera.position.distanceTo(sprite.position);
+            const toSprite = new THREE.Vector3().subVectors(sprite.position, this.camera.position).normalize();
+            const dotProduct = cameraForward.dot(toSprite);
+
+            return {
+                sprite,
+                distance,
+                index,
+                inFront: dotProduct > this.fovConeThreshold
+            };
+        });
+
+        const inFrontSprites = distances
+            .filter(item => item.inFront)
+            .sort((a, b) => a.distance - b.distance);
+
+        if (preferInFront && inFrontSprites.length > 0) {
+            return inFrontSprites[0];
+        }
+
+        distances.sort((a, b) => a.distance - b.distance);
+        return distances[0] || null;
+    }
+
+    jumpNearNearestPoint() {
+        const nearest = this.getNearestSpriteInfo(true);
+        if (!nearest?.sprite) {
+            return;
+        }
+
+        const nearPointPosition = nearest.sprite.position.clone();
+        const offsetDirection = new THREE.Vector3().subVectors(this.camera.position, nearPointPosition);
+
+        if (offsetDirection.lengthSq() < 1e-10) {
+            this.camera.getWorldDirection(offsetDirection);
+            offsetDirection.multiplyScalar(-1);
+        }
+
+        offsetDirection.normalize();
+
+        // Keep the camera extremely close to the near point, but not exactly at the same location.
+        const offsetDistance = Math.max(0.1, Math.min(0.001, this.imageSize * 0.1));
+        const targetPosition = nearPointPosition.add(offsetDirection.multiplyScalar(offsetDistance));
+
+        this.camera.position.copy(targetPosition);
+        this.camera.lookAt(nearest.sprite.position);
+    }
+
     updateNearestPoint() {
         if (this.imageSprites.length === 0) return;
 
@@ -1738,12 +1798,39 @@ class ImageViewer {
         });
     }
 
+    initNearPointControls() {
+        const nearBtn = document.getElementById('btn-near');
+        if (!nearBtn) return;
+
+        nearBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.jumpNearNearestPoint();
+        });
+
+        nearBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.jumpNearNearestPoint();
+        }, { passive: false });
+    }
+
     initGlobalKeyboardShortcuts() {
         document.addEventListener('keydown', (e) => {
             // Space key adds a keyframe
             if (e.key === ' ' || e.code === 'Space') {
                 e.preventDefault(); // Prevent default scrolling behavior
                 this.addKeyframe();
+                return;
+            }
+
+            // Jump very near the current nearest point.
+            if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key.toLowerCase() === 'o') {
+                e.preventDefault();
+                if (this.controller?.keys) {
+                    this.controller.keys['o'] = false;
+                }
+                if (!e.repeat) {
+                    this.jumpNearNearestPoint();
+                }
             }
         });
     }
