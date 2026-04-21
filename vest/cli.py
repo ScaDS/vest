@@ -48,6 +48,12 @@ def main():
         action="store_true",
         help="Disable debug mode"
     )
+
+    parser.add_argument(
+        "--no-write",
+        action="store_true",
+        help="Disable all file-writing operations"
+    )
     
     args = parser.parse_args()
     
@@ -78,7 +84,8 @@ def main():
         image_base_path=image_base_path,
         host=args.host,
         port=args.port,
-        debug=not args.no_debug
+        debug=not args.no_debug,
+        no_write=args.no_write
     )
 
 

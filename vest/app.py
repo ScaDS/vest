@@ -11,7 +11,7 @@ from pathlib import Path
 import glob
 
 
-def create_app(config_name='development'):
+def create_app(config_name='development', no_write=False):
     """Create and configure the Flask application."""
     app = Flask(
         __name__,
@@ -22,6 +22,7 @@ def create_app(config_name='development'):
     # Store data in app context
     app.data_df = None
     app.image_base_path = None
+    app.no_write = no_write
 
     def sanitize_for_json(value):
         """Recursively replace non-JSON-safe numeric values with None."""
@@ -39,7 +40,7 @@ def create_app(config_name='development'):
     @app.route('/')
     def index():
         """Render the main 3D viewer page."""
-        return render_template('viewer.html')
+        return render_template('viewer.html', no_write=app.no_write)
     
     @app.route('/api/data', methods=['GET', 'POST'])
     def get_data():
@@ -137,6 +138,9 @@ def create_app(config_name='development'):
     @app.route('/api/keyframes/save', methods=['POST'])
     def save_keyframes():
         """Save keyframes to a .kf.csv file in the current directory."""
+        if app.no_write:
+            return jsonify({'error': 'Writing files is disabled (--no-write)'}), 403
+
         try:
             data = request.get_json()
             filename = data.get('filename', 'keyframes.kf.csv')
@@ -222,7 +226,14 @@ def create_app(config_name='development'):
     return app
 
 
-def run_app(dataframe=None, image_base_path=None, host='127.0.0.1', port=5000, debug=True):
+def run_app(
+    dataframe=None,
+    image_base_path=None,
+    host='127.0.0.1',
+    port=5000,
+    debug=True,
+    no_write=False
+):
     """
     Create and run the Flask app with data.
     
@@ -238,8 +249,10 @@ def run_app(dataframe=None, image_base_path=None, host='127.0.0.1', port=5000, d
         Port to run on
     debug : bool
         Enable Flask debug mode
+    no_write : bool
+        Disable file-writing operations
     """
-    app = create_app()
+    app = create_app(no_write=no_write)
     
     if dataframe is not None:
         app.data_df = dataframe

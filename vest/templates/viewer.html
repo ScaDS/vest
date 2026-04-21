@@ -688,7 +688,7 @@
         }
     </style>
 </head>
-<body>
+<body data-no-write="{{ 1 if no_write else 0 }}">
     <a id="scads-logo-link" href="https://scads.ai" target="_blank" rel="noopener noreferrer" title="Open SCADS website">
         <img id="scads-logo" src="{{ url_for('static', filename='scads-logo.png') }}" alt="SCADS logo">
     </a>

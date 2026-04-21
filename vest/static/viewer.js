@@ -2049,6 +2049,7 @@ class ImageViewer {
 let selectedSaveFile = null;
 let selectedLoadFile = null;
 let viewerInstance = null;
+const NO_WRITE_MODE = document.body?.dataset?.noWrite === '1';
 
 // Modal control functions
 function closeSaveModal() {
@@ -2062,6 +2063,11 @@ function closeLoadModal() {
 }
 
 async function openSaveModal() {
+    if (NO_WRITE_MODE) {
+        alert('Saving keyframes is disabled in --no-write mode');
+        return;
+    }
+
     const modal = document.getElementById('save-modal');
     const fileList = document.getElementById('save-file-list');
     
@@ -2125,6 +2131,12 @@ async function openLoadModal() {
 }
 
 async function confirmSave() {
+    if (NO_WRITE_MODE) {
+        alert('Saving keyframes is disabled in --no-write mode');
+        closeSaveModal();
+        return;
+    }
+
     const filenameInput = document.getElementById('save-filename');
     let filename = filenameInput.value.trim();
     
@@ -2203,8 +2215,14 @@ async function confirmLoad() {
 // Initialize viewer when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     viewerInstance = new ImageViewer();
+
+    const saveBtn = document.getElementById('save-keyframes-btn');
+    if (NO_WRITE_MODE && saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.title = 'Disabled in --no-write mode';
+    }
     
     // Add event listeners for Save and Load buttons
-    document.getElementById('save-keyframes-btn').addEventListener('click', openSaveModal);
+    saveBtn.addEventListener('click', openSaveModal);
     document.getElementById('load-keyframes-btn').addEventListener('click', openLoadModal);
 });
