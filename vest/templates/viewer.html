@@ -27,13 +27,40 @@
         /* Left-side panel container */
         #left-panels {
             position: absolute;
-            top: 20px;
+            top: 140px;
             left: 20px;
             display: flex;
             flex-direction: column;
             gap: 6px;
             z-index: 100;
             transition: opacity 0.25s ease;
+        }
+
+        #scads-logo-link {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 300;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            padding: 0;
+            text-decoration: none;
+            line-height: 0;
+        }
+
+        #scads-logo-link:hover {
+            opacity: 0.9;
+        }
+
+        #scads-logo {
+            display: block;
+            width: 300px;
+            height: auto;
+            max-width: 100%;
         }
 
         .left-panel {
@@ -662,6 +689,10 @@
     </style>
 </head>
 <body>
+    <a id="scads-logo-link" href="https://scads.ai" target="_blank" rel="noopener noreferrer" title="Open SCADS website">
+        <img id="scads-logo" src="{{ url_for('static', filename='scads-logo.png') }}" alt="SCADS logo">
+    </a>
+
     <div id="loading">
         <div class="spinner"></div>
         <p>Loading 3D viewer...</p>
@@ -825,9 +856,18 @@
         const autoHideCheckbox = document.getElementById('auto-hide-panels');
         const leftPanelsContainer = document.getElementById('left-panels');
         const sideViewsContainer = document.getElementById('side-views');
+        const scadsLogoLink = document.getElementById('scads-logo-link');
+        const scadsLogo = document.getElementById('scads-logo');
         const PANEL_HIDE_DELAY_MS = 10000;
         let autoHideTimeoutId = null;
         let panelsHidden = false;
+
+        const positionPanelsBelowLogo = () => {
+            if (!leftPanelsContainer || !scadsLogoLink) return;
+            const logoRect = scadsLogoLink.getBoundingClientRect();
+            const topOffset = Math.max(140, Math.ceil(logoRect.bottom + 12));
+            leftPanelsContainer.style.top = `${topOffset}px`;
+        };
 
         const showPanels = () => {
             if (!leftPanelsContainer || !sideViewsContainer || !panelsHidden) return;
@@ -891,6 +931,12 @@
         ['mousemove', 'mousedown', 'keydown', 'wheel', 'touchstart', 'pointerdown'].forEach((eventName) => {
             document.addEventListener(eventName, handleUserActivity, { passive: true });
         });
+
+        if (scadsLogo) {
+            scadsLogo.addEventListener('load', positionPanelsBelowLogo);
+        }
+        window.addEventListener('resize', positionPanelsBelowLogo);
+        positionPanelsBelowLogo();
     </script>
 </body>
 </html>
