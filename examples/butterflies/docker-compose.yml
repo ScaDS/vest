@@ -18,6 +18,17 @@ services:
             "https://github.com/ScaDS/vest/raw/refs/heads/main/examples/butterflies/data.csv",
             "data.csv",
         )
+
+        urllib.request.urlretrieve(
+            "https://github.com/ScaDS/vest/raw/refs/heads/main/examples/butterflies/butterflies1.kf.csv",
+            "butterflies1.kf.csv",
+        )
+        urllib.request.urlretrieve(
+            "https://github.com/ScaDS/vest/raw/refs/heads/main/examples/butterflies/butterflies2.kf.csv",
+            "butterflies2.kf.csv",
+        )
+
+        
         PY
         python - <<'PY'
         import os
@@ -29,4 +40,4 @@ services:
         )
         print("Path to dataset files:", path)
         PY
-        vest data.csv --image-path ./images --host 0.0.0.0 --port 5000 --no-debug
+        vest data.csv --image-path ./images --host 0.0.0.0 --port 5000 --no-debug --no-write
