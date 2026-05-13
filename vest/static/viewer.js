@@ -954,7 +954,7 @@ class ImageViewer {
     
     reloadLoadedImages() {
         const loadedImages = this.imageSprites
-            .filter(sprite => sprite?.userData?.isImage)
+            .filter(sprite => sprite.userData && sprite.userData.isImage)
             .map(sprite => ({
                 sprite,
                 distance: this.camera.position.distanceTo(sprite.position)
