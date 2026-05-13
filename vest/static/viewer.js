@@ -953,11 +953,15 @@ class ImageViewer {
     }
     
     reloadLoadedImages() {
-        // Reload all sprites that currently have images loaded
-        this.imageSprites.forEach(sprite => {
-            if (sprite.userData.isImage) {
-                this.loadSpriteAsImage(sprite);
-            }
+        const loadedImages = this.imageSprites
+            .filter(sprite => sprite?.userData?.isImage)
+            .sort((a, b) =>
+                this.camera.position.distanceTo(a.position) -
+                this.camera.position.distanceTo(b.position)
+            );
+
+        loadedImages.forEach(sprite => {
+            this.loadSpriteAsImage(sprite);
         });
     }
 
