@@ -954,10 +954,10 @@ class ImageViewer {
     
     reloadLoadedImages() {
         const loadedImages = this.imageSprites
-            .filter(sprite => sprite.userData && sprite.userData.isImage)
+            .filter(sprite => sprite.userData.isImage)
             .map(sprite => ({
                 sprite,
-                distance: this.camera.position.distanceTo(sprite.position)
+                distance: this.camera.position.distanceToSquared(sprite.position)
             }))
             .sort((a, b) => a.distance - b.distance)
             .map(item => item.sprite);
