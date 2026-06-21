@@ -6,7 +6,7 @@ import os
 import json
 import math
 import pandas as pd
-from flask import Flask, render_template, jsonify, request, send_file
+from flask import Flask, render_template, jsonify, request, send_from_directory
 from pathlib import Path
 import glob
 
@@ -67,41 +67,13 @@ def create_app(config_name='development', no_write=False):
             'image_base_path': app.image_base_path
         })
     
-    @app.route('/api/image/<path:filename>')
+    @app.route('/images/<path:filename>')
     def get_image(filename):
-        """Serve image files."""
+        """Serve image files directly from the image base path."""
         if app.image_base_path is None:
-            return jsonify({'error': 'No image base path set'}), 400
-        
-        # Normalize path separators and construct full path
-        filename = filename.replace('/', os.sep).replace('\\', os.sep)
-        file_path = os.path.join(app.image_base_path, filename)
-        file_path = os.path.normpath(file_path)
-        
-        if os.path.exists(file_path):
-            # Detect MIME type based on file extension
-            ext = os.path.splitext(filename)[1].lower()
-            mime_types = {
-                '.png': 'image/png',
-                '.jpg': 'image/jpeg',
-                '.jpeg': 'image/jpeg',
-                '.gif': 'image/gif',
-                '.webp': 'image/webp',
-                '.bmp': 'image/bmp'
-            }
-            mimetype = mime_types.get(ext, 'image/png')
-            return send_file(file_path, mimetype=mimetype)
-        
-        # Log detailed error info
-        print(f"ERROR: Image not found")
-        print(f"  Requested: {filename}")
-        print(f"  Base path: {app.image_base_path}")
-        print(f"  Full path: {file_path}")
-        print(f"  Base path exists: {os.path.exists(app.image_base_path)}")
-        if os.path.exists(app.image_base_path):
-            files = os.listdir(app.image_base_path)
-            print(f"  Files in base path: {files[:10]}...")  # Show first 10
-        return jsonify({'error': 'File not found', 'path': file_path}), 404
+            return jsonify({'error': 'No image base path set'}), 404
+
+        return send_from_directory(app.image_base_path, filename)
     
     @app.route('/api/stats')
     def get_stats():
@@ -188,13 +160,25 @@ def create_app(config_name='development', no_write=False):
             filename = request.args.get('filename', '')
             if not filename:
                 return jsonify({'error': 'No filename provided'}), 400
-            
-            # Create full path in current working directory
-            file_path = os.path.join(os.getcwd(), filename)
-            
-            if not os.path.exists(file_path):
+
+            # Accept only a plain filename (no path separators) to prevent
+            # path traversal attacks.
+            safe_name = os.path.basename(filename)
+            if not safe_name or safe_name != filename:
+                return jsonify({'error': 'Invalid filename'}), 400
+
+            # Discover the file via glob so the resulting path is not derived
+            # from user input, then match against the validated safe_name.
+            cwd = os.getcwd()
+            file_path = None
+            for candidate in glob.glob(os.path.join(cwd, '*.kf.csv')):
+                if os.path.basename(candidate) == safe_name:
+                    file_path = candidate
+                    break
+
+            if file_path is None:
                 return jsonify({'error': f'File not found: {filename}'}), 404
-            
+
             # Read CSV file
             df = pd.read_csv(file_path)
             

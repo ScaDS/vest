@@ -81,7 +81,7 @@ Validate and load from pandas DataFrame.
 
 - `GET /` - Main viewer page
 - `GET/POST /api/data` - Get/set scene data
-- `GET /api/image/<filename>` - Serve image files
+- `GET /images/<filename>` - Serve image files directly from the image base path
 - `GET /api/stats` - Get scene statistics
 
 ## Browser Requirements
