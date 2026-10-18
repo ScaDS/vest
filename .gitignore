@@ -167,5 +167,11 @@ examples/satellite_images/cache
 examples/cars
 examples/letters
 examples/nfdi4bioimage-training
+examples/inf
+examples/cars*
+examples/pdfs/slides.kf.csv
+examples/slideinsight.zip
+
+
 
 Untitled*.*
