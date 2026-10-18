@@ -66,6 +66,16 @@ train\Image_420.jpg, 14.487134, 3.430255, -2.0715249
 test\Image_2562.jpg, 12.263655, 5.8971086, -0.066879705
 ```
 
+Optionally, the CSV file can contain these columns with metadata about each image. If present, they are shown in the info panel in the top left corner for the image nearest to the camera:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `authors` | string | Image authors. If the value contains ` and `, only the part before the first ` and ` is shown, followed by "et al." |
+| `license` | string | License of the image, e.g. `CC-BY 4.0` |
+| `source_url` | string | URL where the image was obtained from, shown as a clickable link (must start with `http://` or `https://`) |
+
+Rows with empty values are hidden.
+
 
 ## Controls
 

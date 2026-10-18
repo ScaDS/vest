@@ -1588,11 +1588,44 @@ class ImageViewer {
 
         // Update UI with nearest point
         if (closest[0] && closest[0].distance < 1000) {
-            document.getElementById('near-point').textContent = 
+            document.getElementById('near-point').textContent =
                 `${closest[0].sprite.userData.filename} (${closest[0].distance.toFixed(1)}m)`;
+            this.updateNearPointMetadata(this.points[closest[0].sprite.userData.index]);
         } else {
             document.getElementById('near-point').textContent = '-';
+            this.updateNearPointMetadata(null);
         }
+    }
+
+    updateNearPointMetadata(point) {
+        const getValue = (key) => {
+            const value = point?.[key];
+            if (value === null || value === undefined) return '';
+            return String(value).trim();
+        };
+
+        const setRow = (groupId, value, apply) => {
+            const group = document.getElementById(groupId);
+            if (!group) return;
+            group.style.display = value ? '' : 'none';
+            if (value) apply(value);
+        };
+
+        setRow('near-point-authors-group', getValue('authors'), (authors) => {
+            const andIndex = authors.indexOf(' and ');
+            document.getElementById('near-point-authors').textContent =
+                andIndex >= 0 ? `${authors.substring(0, andIndex)} et al.` : authors;
+        });
+
+        setRow('near-point-license-group', getValue('license'), (license) => {
+            document.getElementById('near-point-license').textContent = license;
+        });
+
+        setRow('near-point-source-group', getValue('source_url'), (url) => {
+            const link = document.getElementById('near-point-source');
+            link.textContent = url;
+            link.href = /^https?:\/\//i.test(url) ? url : '#';
+        });
     }
 
     loadSpriteAsImage(sprite) {

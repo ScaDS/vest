@@ -174,6 +174,11 @@
             font-family: 'Courier New', monospace;
         }
 
+        .info-value a {
+            color: #4a9eff;
+            word-break: break-all;
+        }
+
         #controls {
             font-size: 12px;
             line-height: 1.5;
@@ -709,6 +714,18 @@
         <div class="info-group">
             <div class="info-label">Near Point</div>
             <div class="info-value" id="near-point">-</div>
+        </div>
+        <div class="info-group" id="near-point-authors-group" style="display: none;">
+            <div class="info-label">Authors</div>
+            <div class="info-value" id="near-point-authors"></div>
+        </div>
+        <div class="info-group" id="near-point-license-group" style="display: none;">
+            <div class="info-label">License</div>
+            <div class="info-value" id="near-point-license"></div>
+        </div>
+        <div class="info-group" id="near-point-source-group" style="display: none;">
+            <div class="info-label">Source</div>
+            <div class="info-value"><a id="near-point-source" href="#" target="_blank" rel="noopener noreferrer"></a></div>
         </div>
         </div>
         
