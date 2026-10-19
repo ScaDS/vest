@@ -895,7 +895,7 @@ class ImageViewer {
             const sprite = new THREE.Sprite(material);
             sprite.position.set(x, y, z);
             sprite.scale.set(0.5, 0.5, 1);
-            sprite.userData = { filename, index, imageUrl: `/api/image/${filename}`, textureLoader, isSprite: true };
+            sprite.userData = { filename, index, imageUrl: `/images/${filename}`, textureLoader, isSprite: true };
 
             this.scene.add(sprite);
             this.imageSprites.push(sprite);
